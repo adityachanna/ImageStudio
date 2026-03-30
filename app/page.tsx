@@ -2,6 +2,7 @@
 
 import React, { useState, useRef } from 'react';
 import { Settings, Scissors, FilePlus, UploadCloud, CheckCircle2, X, ArrowRight, Image as ImageIcon, Download, Zap, Lock, Star } from 'lucide-react';
+import ErrorReporter from '@/components/ErrorReporter';
 
 type ToolType = 'compress' | 'resize' | 'pdf';
 
@@ -11,6 +12,7 @@ export default function Home() {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [processing, setProcessing] = useState(false);
+  const [errorInfo, setErrorInfo] = useState<{ message: string; requestId: string } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [quality, setQuality] = useState(80);
@@ -49,6 +51,7 @@ export default function Home() {
     setProcessing(true);
     const formData = new FormData();
     formData.append('file', file);
+    setErrorInfo(null);
     try {
       let endpoint = '';
       if (activeTool === 'compress') {
@@ -63,7 +66,13 @@ export default function Home() {
         endpoint = '/api/pdf';
       }
       const res = await fetch(endpoint, { method: 'POST', body: formData });
-      if (!res.ok) throw new Error('Processing failed');
+      const reqId = res.headers.get('X-Request-Id') ?? '';
+      if (!res.ok) {
+        let errMsg = 'Processing failed';
+        try { const j = await res.json(); errMsg = j?.error ?? errMsg; } catch {}
+        setErrorInfo({ message: errMsg, requestId: reqId });
+        return;
+      }
       const blob = await res.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -71,7 +80,10 @@ export default function Home() {
       a.download = `imagestudio_${activeTool}_result.${activeTool === 'pdf' ? 'pdf' : activeTool === 'compress' ? format : file.name.split('.').pop() || 'jpg'}`;
       document.body.appendChild(a); a.click();
       window.URL.revokeObjectURL(url); document.body.removeChild(a);
-    } catch { alert('Error processing file.'); }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Unexpected error';
+      setErrorInfo({ message: msg, requestId: '' });
+    }
     finally { setProcessing(false); }
   };
 
@@ -413,6 +425,17 @@ export default function Home() {
                       <><Download size={18} /> Download Result</>
                     )}
                   </button>
+
+                  {/* ── Error reporter ── */}
+                  {errorInfo && (
+                    <ErrorReporter
+                      errorMessage={errorInfo.message}
+                      requestId={errorInfo.requestId}
+                      tool={activeTool}
+                      fileName={file?.name}
+                      onDismiss={() => setErrorInfo(null)}
+                    />
+                  )}
                 </div>
               </div>
             )}
