@@ -42,7 +42,7 @@ export async function POST(req: Request) {
     // ── Process with sharp ──────────────────────────────────────────────────
     let outputBuffer: Buffer;
     if (format === 'png') {
-      outputBuffer = await sharp(inputBuffer).png({ quality }).toBuffer();
+      outputBuffer = await sharp(inputBUffer).png({ quality }).toBuffer();
     } else if (format === 'webp') {
       outputBuffer = await sharp(inputBuffer).webp({ quality }).toBuffer();
     } else {
