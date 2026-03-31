@@ -2,6 +2,7 @@
 
 import React, { useState, useRef } from 'react';
 import { AlertTriangle, X, Bug, Send, Camera, Loader2, CheckCircle2, ChevronDown, ExternalLink } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 
 interface ErrorReporterProps {
   /** The error message from the API */
@@ -27,6 +28,7 @@ export default function ErrorReporter({
   fileName,
   onDismiss,
 }: ErrorReporterProps) {
+  const router = useRouter();
   const [step, setStep] = useState<ReportStep>('idle');
   const [email, setEmail] = useState('');
   const [extraInfo, setExtraInfo] = useState('');
@@ -111,8 +113,19 @@ export default function ErrorReporter({
         throw new Error(data?.detail ?? 'Submission failed');
       }
 
-      setSubmittedId(data.requestId ?? '');
-      setStep('success');
+      const resolvedRequestId = (data.requestId ?? requestId) || crypto.randomUUID();
+      setSubmittedId(resolvedRequestId);
+
+      try {
+        sessionStorage.setItem(
+          `request-dashboard:${resolvedRequestId}`,
+          JSON.stringify({ ticket: data })
+        );
+      } catch {
+        // Non-blocking cache write failure.
+      }
+
+      router.push(`/requests?requestId=${encodeURIComponent(resolvedRequestId)}`);
     } catch (err) {
       setSubmitError(err instanceof Error ? err.message : 'Something went wrong.');
       setStep('open');

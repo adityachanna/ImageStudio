@@ -1,275 +1,151 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React from 'react';
 import Link from 'next/link';
-import { motion } from 'framer-motion';
 import ArchitectureFlow from '../components/ArchitectureFlow';
-
-const MOCK_CONSOLE_LOGS = [
-  { text: "[SYSTEM] Booting Mamba RCA Agentic Core...", color: "text-slate-400" },
-  { text: "[SYSTEM] Establishing connection to incident data lake...", color: "text-slate-400" },
-  { text: "✓ Connected. Waiting for incoming telemetry.", color: "text-green-400" },
-];
-
-const RCA_PROCESS_ROUTINE = [
-  { text: "➜ RECEIVED: Image Studio Alert #405 - Resizer Crash", color: "text-blue-400" },
-  { text: "[GEMINI_AGENT] Analyzing visual artifact: 'Spinner stalled on 4MB image'.", color: "text-slate-400" },
-  { text: "[ROUTER] Extracting vector chunks. Checking embedding space...", color: "text-slate-400" },
-  { text: "✓ No exact duplicates found. Triggering Zero-Day RCA protocols.", color: "text-green-400" },
-  { text: "[OPENCODE] Checking out target branch... Scanning app/api/resize/route.ts", color: "text-yellow-400" },
-  { text: "[OPENCODE] Trace match. Found unhandled bounds object: sharp(undefined)", color: "text-error" },
-  { text: "➜ GENERATING PROPOSAL: Inject type assertion and bounds check before sharp() execution.", color: "text-primary-fixed-dim" },
-  { text: "[SYSTEM] Automated PR created. Ready for engineering review.", color: "text-green-400" },
-];
+import { motion } from 'framer-motion';
 
 export default function LandingPage() {
-  const [logs, setLogs] = useState(MOCK_CONSOLE_LOGS);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [inputVal, setInputVal] = useState('');
-  const endOfLogsRef = useRef<HTMLDivElement>(null);
-
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
-
-
-
-  useEffect(() => {
-    return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current);
-    };
-  }, []);
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!inputVal.trim() || isProcessing) return;
-
-    setLogs(prev => [...prev, { text: `> ${inputVal}`, color: "text-white" }]);
-    setInputVal('');
-    setIsProcessing(true);
-
-    let step = 0;
-    if (intervalRef.current) clearInterval(intervalRef.current);
-    intervalRef.current = setInterval(() => {
-      if (step < RCA_PROCESS_ROUTINE.length) {
-        setLogs(prev => [...(prev || []), RCA_PROCESS_ROUTINE[step]]);
-        step++;
-      } else {
-        if (intervalRef.current) clearInterval(intervalRef.current);
-        setIsProcessing(false);
-        setLogs(prev => [...(prev || []), { text: "✓ RCA Complete. Awaiting next input.", color: "text-green-400" }]);
-      }
-    }, 600);
-  };
-
   return (
-    <div className="bg-background font-body text-on-surface selection:bg-primary-fixed selection:text-on-primary-fixed min-h-screen">
-      {/* Top Navigation Shell */}
-      <nav className="fixed top-0 w-full z-50 bg-white/90 backdrop-blur-3xl border-b border-slate-100/50 shadow-sm">
-        <div className="flex justify-between items-center max-w-[1440px] mx-auto px-12 h-32">
-          <Link href="/" className="flex items-center">
-            <img src="/logo.png" alt="Mamba RCA" className="h-28 w-auto px-4 object-contain" />
+    <div className="font-mono bg-[var(--bg-base)] text-black min-h-screen">
+      <nav className="fixed top-0 w-full z-50 bg-[var(--bg-surface)] border-b border-[var(--border-strong)] shadow-sm">
+        <div className="flex justify-between items-center max-w-7xl mx-auto px-6 h-16">
+          <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+            <span className="font-display font-semibold text-xl tracking-tight text-slate-800">Mamba<span className="text-[var(--accent)]">_RCA</span></span>
           </Link>
-          <div className="hidden md:flex items-center gap-8 font-headline font-medium text-sm tracking-tight text-slate-600">
-            <Link href="#" className="font-semibold text-primary border-b-2 border-primary pb-1">Solutions</Link>
-            <Link href="/sandbox" className="hover:text-primary transition-colors">Demo Sandbox</Link>
-            <Link href="#" className="hover:text-primary transition-colors">Docs</Link>
+          <div className="hidden md:flex items-center gap-8 font-medium text-sm text-[var(--text-muted)]">
+            <Link href="#architecture" className="hover:text-[var(--text-main)] transition-colors">Architecture</Link>
+            <Link href="/sandbox" className="hover:text-[var(--text-main)] transition-colors">Sandbox</Link>
+            <Link href="/requests" className="hover:text-[var(--text-main)] transition-colors">Tickets / DB</Link>
           </div>
           <div className="flex items-center gap-4">
-            <button className="text-slate-600 hover:text-primary transition-all duration-300 font-headline font-medium text-sm">Login</button>
-            <Link href="/sandbox" className="inline-flex items-center justify-center bg-primary text-white px-5 py-2.5 rounded-lg font-headline font-semibold text-sm shadow-md hover:bg-black transition-all">
-              Get Started
+            <Link href="/requests" className="pro-button px-5 py-2 text-sm bg-blue-600 text-white hover:bg-blue-700">
+              Open Dashboard
             </Link>
           </div>
         </div>
       </nav>
 
       <main className="pt-16">
-        {/* Hero Section: Architectural Blueprint */}
-        <section className="relative min-h-[921px] flex items-center overflow-hidden py-20 px-6">
-          <div className="absolute inset-0 grid-pattern pointer-events-none opacity-40"></div>
-          <div className="max-w-7xl mx-auto w-full grid grid-cols-1 lg:grid-cols-12 gap-16 relative z-10">
-            
-            {/* Left: Headline Editorial */}
-            <div className="lg:col-span-12 lg:mb-20 text-center max-w-4xl mx-auto">
-              <h1 className="font-headline text-6xl lg:text-8xl font-black text-[#0f172a] leading-[0.95] tracking-tight mb-10">
-                The <span className="text-primary italic">Orchestrated</span> Intelligence Layer.
-              </h1>
-              <p className="font-body text-xl lg:text-2xl text-slate-500 max-w-2xl mx-auto mb-12 leading-relaxed">
-                Mamba RCA synthesizes deterministic autonomous agents into a high-performance pipeline. We instantly root-cause issues by pulling code directly from your repo.
-              </p>
-              <div className="flex flex-wrap justify-center gap-6 items-center">
-                <Link href="/sandbox" className="inline-flex items-center justify-center bg-primary text-white px-10 py-5 rounded-2xl font-headline font-bold text-lg shadow-[0_20px_50px_rgba(0,88,190,0.3)] hover:scale-105 transition-all">
-                  Get Started →
-                </Link>
-                <button className="inline-flex items-center justify-center gap-2 bg-slate-50 text-slate-600 px-10 py-5 rounded-2xl font-headline font-bold text-lg hover:bg-slate-100 transition-all border border-slate-200">
-                  View Demo
-                </button>
+        <div className="bg-slate-100 border-b border-[var(--border-strong)] py-2 overflow-hidden flex w-full">
+          <motion.div 
+            animate={{ x: ["0%", "-50%"] }} 
+            transition={{ ease: "linear", duration: 80, repeat: Infinity }}
+            className="flex whitespace-nowrap font-medium text-[var(--text-muted)] text-xs w-fit"
+          >
+            {[...Array(2)].map((_, i) => (
+              <div key={i} className="flex shrink-0">
+                <span className="shrink-0 px-2 tracking-widest text-[#3b82f6]">HIGH-PERFORMANCE PIPELINE • DETERMINISTIC AGENTIC CORE • MULTIMODAL INGESTION • ROOT CAUSE ANALYSIS • ZERO-DAY EXPLOIT RESOLUTION •</span>
+                <span className="shrink-0 px-2 tracking-widest text-[#3b82f6]">HIGH-PERFORMANCE PIPELINE • DETERMINISTIC AGENTIC CORE • MULTIMODAL INGESTION • ROOT CAUSE ANALYSIS • ZERO-DAY EXPLOIT RESOLUTION •</span>
+                <span className="shrink-0 px-2 tracking-widest text-[#3b82f6]">HIGH-PERFORMANCE PIPELINE • DETERMINISTIC AGENTIC CORE • MULTIMODAL INGESTION • ROOT CAUSE ANALYSIS • ZERO-DAY EXPLOIT RESOLUTION •</span>
+                <span className="shrink-0 px-2 tracking-widest text-[#3b82f6]">HIGH-PERFORMANCE PIPELINE • DETERMINISTIC AGENTIC CORE • MULTIMODAL INGESTION • ROOT CAUSE ANALYSIS • ZERO-DAY EXPLOIT RESOLUTION •</span>
               </div>
-            </div>
+            ))}
+          </motion.div>
+        </div>
 
-            {/* Full Width Architecture Diagram */}
-            <div className="lg:col-span-12 relative flex items-center justify-center min-h-[600px] mt-10">
-              <div className="w-full h-[700px] z-20">
-                <ArchitectureFlow />
-              </div>
-            </div>
-
+        <section id="architecture" className="relative min-h-[80vh] flex flex-col items-center justify-center p-6 subtle-grid border-b border-[var(--border-strong)] bg-white">
+          <div className="max-w-5xl mx-auto text-center z-10 w-full mb-12">
+            <h1 className="font-display text-5xl md:text-7xl font-bold tracking-tight mb-6 text-slate-900 leading-tight">
+              <motion.span initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.1 }} className="block">The Engine of</motion.span>
+              <motion.span initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.2 }} className="text-[var(--accent)] block">Resolution.</motion.span>
+            </h1>
+            <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.5, delay: 0.4 }} className="max-w-2xl mx-auto text-lg text-[var(--text-muted)] mb-10">
+              Automated Root Cause Analysis for modern resilient architectures. We pull the failure directly from the source code.
+            </motion.p>
+            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.5, delay: 0.5 }} className="flex flex-wrap justify-center gap-4">
+              <Link href="/requests" className="pro-button text-base px-8 py-3 bg-blue-600 text-white shadow-md">
+                Open Tickets / DB
+              </Link>
+            </motion.div>
           </div>
+          
+          <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, delay: 0.6 }} className="w-full max-w-7xl h-[500px] border border-[var(--border-strong)] rounded-xl bg-white shadow-xl relative overflow-hidden">
+             <div className="absolute top-0 left-0 bg-slate-50 text-[var(--text-muted)] px-4 py-2 text-xs font-semibold z-10 border-b border-r border-[var(--border-strong)] rounded-br-lg">System Architecture Node Graph</div>
+             <ArchitectureFlow />
+          </motion.div>
         </section>
 
-        {/* Global Interactive Console */}
-        <section className="py-24 px-6 bg-white relative border-t border-slate-200" id="console">
-          <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
-            <div>
-              <h2 className="font-headline text-4xl lg:text-5xl font-extrabold text-slate-900 mb-6 tracking-tight leading-tight">Live Pipeline Console</h2>
-              <p className="font-body text-slate-600 text-lg mb-8 leading-relaxed">
-                Connect directly to the Mamba RCA daemon. 
-                Type an issue and watch the workflow resolve the ticket in real-time through our orchestrated toolchain.
-              </p>
-              <ul className="space-y-4 font-body text-slate-700">
-                <li className="flex items-center gap-3">
-                  <span className="material-symbols-outlined text-primary">check_circle</span>
-                  <span><strong>Zero-Day Tracking:</strong> Automated source-code analysis limits manual triage.</span>
-                </li>
-                <li className="flex items-center gap-3">
-                  <span className="material-symbols-outlined text-primary">check_circle</span>
-                  <span><strong>Deduplication:</strong> Prevents massive runaway compute by linking existing tickets.</span>
-                </li>
-              </ul>
-            </div>
-            
-            <div className="h-[550px] w-full bg-[#0f172a] shadow-2xl rounded-2xl overflow-hidden border border-slate-800 flex flex-col">
-              {/* Console Header */}
-              <div className="bg-[#1e293b] px-4 py-3 flex items-center justify-between border-b border-slate-700/50 shadow-sm">
-                <div className="flex items-center gap-3">
-                  <div className="flex gap-2">
-                    <div className="w-3 h-3 rounded-full bg-red-500/80"></div>
-                    <div className="w-3 h-3 rounded-full bg-yellow-500/80"></div>
-                    <div className="w-3 h-3 rounded-full bg-green-500/80"></div>
-                  </div>
-                  <span className="ml-2 text-[11px] font-mono text-slate-400 font-semibold tracking-wider">mamba-engine / interactive-shell</span>
-                </div>
-                <div className="flex items-center gap-2 text-primary-fixed-dim text-xs font-bold bg-primary/10 px-3 py-1 rounded-md">
-                  <span>LIVE</span>
-                  <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse"></span>
-                </div>
-              </div>
-
-              {/* Console Output Room */}
-              <div className="flex-1 p-6 font-mono text-[13px] leading-relaxed overflow-y-auto w-full custom-scrollbar space-y-2">
-                {logs.filter(Boolean).map((log, i) => (
-                  <motion.div 
-                    initial={{ opacity: 0, x: -10 }} 
-                    animate={{ opacity: 1, x: 0 }} 
-                    key={i} 
-                    className={`${log?.color || ''}`}
-                  >
-                    {log?.text}
-                  </motion.div>
-                ))}
-                {isProcessing && (
-                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-slate-500 animate-pulse">
-                    Analyzing stream...
-                  </motion.div>
-                )}
-              </div>
-
-              {/* Console Input Bar */}
-              <div className="bg-[#0f172a] border-t border-slate-700/50 p-4">
-                <form onSubmit={handleSubmit} className="flex items-center gap-3 bg-[#1e293b] rounded-lg p-2 border border-slate-600/50 focus-within:border-primary/50 focus-within:ring-1 focus-within:ring-primary/50 transition-all">
-                  <span className="text-green-400 font-mono ml-2 font-bold">~</span>
-                  <input 
-                    type="text" 
-                    value={inputVal}
-                    onChange={(e) => setInputVal(e.target.value)}
-                    disabled={isProcessing}
-                    placeholder="Type an issue (e.g. 'Compression route throws 500')"
-                    className="flex-1 bg-transparent border-none outline-none text-slate-200 font-mono text-[13px] placeholder-slate-600 disabled:opacity-50"
-                  />
-                  <button 
-                    type="submit" 
-                    disabled={isProcessing || !inputVal.trim()}
-                    className="bg-primary hover:bg-primary-container text-on-primary px-4 py-1.5 rounded-md font-bold text-xs disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                  >
-                    Execute
-                  </button>
-                </form>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* Detailed Project Workflow Info */}
-        <section className="py-24 px-6 bg-slate-50 relative border-t border-slate-200">
+        <section className="py-24 px-6 border-b border-[var(--border-strong)] bg-slate-50">
           <div className="max-w-6xl mx-auto">
-            <div className="text-center mb-16">
-              <h2 className="font-headline text-4xl lg:text-5xl font-extrabold text-slate-900 mb-6 tracking-tight">The "Person-in-the-Loop" Flow</h2>
-              <p className="font-body text-slate-600 text-lg max-w-2xl mx-auto leading-relaxed">
-                Watch how a ticket moves through the dual-layered diagnostic pipeline, from the moment a bug is submitted to the exact code changes proposed.
-              </p>
+            <div className="flex justify-between items-end mb-12 border-b border-[var(--border-strong)] pb-4">
+              <h2 className="font-display text-3xl md:text-4xl font-semibold text-slate-800 tracking-tight">Data Execution Path</h2>
+              <span className="text-sm font-medium text-[var(--text-muted)] px-3 py-1 bg-slate-200 rounded-full">Phase 1</span>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {/* Phase A */}
-              <div className="bg-white p-8 rounded-2xl shadow-md border border-slate-200 hover:border-primary/50 transition-colors">
-                <div className="w-12 h-12 rounded-xl bg-slate-800 text-white flex items-center justify-center font-bold mb-6">A</div>
-                <h3 className="font-headline text-xl font-bold mb-3">Submission & Ingestion</h3>
-                <p className="font-body text-slate-600 mb-4 text-sm leading-relaxed">A user details a crash (e.g., "Resizer fails on 4MB images") and attaches a visual artifact. The backend pushes these directly to S3 and establishes a Pending ticket.</p>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="pro-card p-8">
+                <span className="text-4xl font-display font-bold block mb-4 text-[var(--accent)] opacity-80">01.</span>
+                <h3 className="text-xl font-semibold mb-3 text-slate-900">Multimodal Ingestion</h3>
+                <p className="text-sm text-[var(--text-muted)] leading-relaxed">Flash parses raw visual evidence and technical logs to structure absolute constraints.</p>
               </div>
-
-              {/* Phase B */}
-              <div className="bg-white p-8 rounded-2xl shadow-md border border-slate-200 hover:border-indigo-500/50 transition-colors">
-                <div className="w-12 h-12 rounded-xl bg-indigo-500 text-white flex items-center justify-center font-bold mb-6">B</div>
-                <h3 className="font-headline text-xl font-bold mb-3">Multimodal Structuring</h3>
-                <p className="font-body text-slate-600 mb-4 text-sm leading-relaxed">Gemini Flash reads the screenshot and description. It generates a "Normalized Incident Record", safely extracting exact errors, active features, and severity metrics.</p>
+              <div className="pro-card p-8">
+                <span className="text-4xl font-display font-bold block mb-4 text-[var(--accent)] opacity-80">02.</span>
+                <h3 className="text-xl font-semibold mb-3 text-slate-900">Vector Deduplication</h3>
+                <p className="text-sm text-[var(--text-muted)] leading-relaxed">MongoDB clusters map the exact crash trace against previous events to halt runaway computation.</p>
               </div>
-
-              {/* Phase C */}
-              <div className="bg-white p-8 rounded-2xl shadow-md border border-slate-200 hover:border-blue-500/50 transition-colors">
-                <div className="w-12 h-12 rounded-xl bg-blue-500 text-white flex items-center justify-center font-bold mb-6">C</div>
-                <h3 className="font-headline text-xl font-bold mb-3">RAG & Deduplication</h3>
-                <p className="font-body text-slate-600 mb-4 text-sm leading-relaxed">A mathematical embedding traces the MongoDB cluster over the last 60 days. If the signature matches precisely, it links the duplicate and halts to prevent runaway compute.</p>
-              </div>
-
-              {/* Phase D */}
-              <div className="bg-white p-8 rounded-2xl shadow-md border border-slate-200 hover:border-green-600/50 transition-colors lg:col-span-2">
-                <div className="w-12 h-12 rounded-xl bg-green-600 text-white flex items-center justify-center font-bold mb-6">D</div>
-                <h3 className="font-headline text-xl font-bold mb-3">OpenCode Root Cause Analysis</h3>
-                <p className="font-body text-slate-600 mb-4 text-sm leading-relaxed">
-                  The backend spins up the target GitHub repo and copies artifacts to input directories. OpenCode steps directly inside the codebase, aggressively grepping for the logic path of the crash. <br/><br/>
-                  <b>It reports the Exact Cause, generates an Implementation Plan, and reviews potential Side-Effects.</b>
-                </p>
-              </div>
-
-              {/* Phase E */}
-              <div className="bg-white p-8 rounded-2xl shadow-md border border-slate-200 hover:border-slate-700/50 transition-colors">
-                <div className="w-12 h-12 rounded-xl bg-slate-700 text-white flex items-center justify-center font-bold mb-6">E</div>
-                <h3 className="font-headline text-xl font-bold mb-3">DB Finalization</h3>
-                <p className="font-body text-slate-600 mb-4 text-sm leading-relaxed">The frontend updates live state immediately. Developers review the full AI execution transcript directly alongside the finalized markdown engineering report.</p>
-              </div>
-            </div>
-
-            {/* Tech Stack Banner */}
-            <div className="mt-16 bg-[#0a192f] rounded-3xl p-8 lg:p-12 flex flex-col md:flex-row items-center justify-between shadow-2xl overflow-hidden relative">
-              <div className="absolute inset-0 bg-primary/10 -rotate-6 scale-150 origin-left blur-3xl"></div>
-              <div className="relative z-10 md:w-2/3 mb-8 md:mb-0">
-                <h3 className="font-headline text-3xl font-extrabold text-white mb-4">Core Technology Stack</h3>
-                <div className="flex flex-wrap gap-2 text-sm font-label font-bold text-slate-300">
-                  <span className="bg-white/10 px-3 py-1.5 rounded text-white">Next.js</span>
-                  <span className="bg-white/10 px-3 py-1.5 rounded text-white">FastAPI (Python)</span>
-                  <span className="bg-white/10 px-3 py-1.5 rounded text-white">MongoDB Vector Search</span>
-                  <span className="bg-white/10 px-3 py-1.5 rounded text-white">Cloudflare R2 / S3</span>
-                  <span className="bg-white/10 px-3 py-1.5 rounded text-white">Gemini 2.0 Flash</span>
-                  <span className="bg-white/10 px-3 py-1.5 rounded text-white">OpenRouter (Nemotron)</span>
+              <div className="pro-card p-8">
+                <span className="text-4xl font-display font-bold block mb-4 text-[var(--accent)] opacity-80">03.</span>
+                <div className="flex items-center gap-2 mb-2">
+                  <h3 className="text-xl font-semibold text-slate-900">Code Harness</h3>
+                  <span className="text-[10px] font-medium text-[var(--accent)] bg-blue-50 border border-blue-100 px-2 py-0.5 rounded-full uppercase tracking-wider">OpenCode</span>
                 </div>
-              </div>
-              <div className="relative z-10 shrink-0">
-                <Link href="/sandbox" className="btn-primary" style={{ margin: 0 }}>Start Live Sandbox Demo</Link>
+                <p className="text-sm text-[var(--text-muted)] leading-relaxed">The deterministic RCA engine operates directly inside the AST mapping fault boundaries to generate patch pull requests directly over MCP.</p>
               </div>
             </div>
           </div>
         </section>
 
+        <section className="py-24 px-6 bg-white subtle-grid">
+          <div className="max-w-6xl mx-auto">
+            <div className="flex justify-between items-end mb-12 border-b border-[var(--border-strong)] pb-4">
+              <h2 className="font-display text-3xl md:text-4xl font-semibold text-slate-800 tracking-tight">System Stack</h2>
+              <span className="text-sm font-medium text-[var(--text-muted)] px-3 py-1 bg-slate-100 rounded-full">Phase 2</span>
+            </div>
+            
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+              {[
+                { name: "Next.js", desc: "Core Framework", iconUrl: "https://cdn.simpleicons.org/nextdotjs/000000" },
+                { name: "FastAPI", desc: "Python Core", iconUrl: "https://cdn.simpleicons.org/fastapi/009688" },
+                { name: "MongoDB", desc: "Vector Search", iconUrl: "https://cdn.simpleicons.org/mongodb/47A248" },
+                { name: "Cloudflare", desc: "R2 Storage", iconUrl: "https://cdn.simpleicons.org/cloudflare/F38020" },
+                { name: "MCP", desc: "Model Context", iconUrl: "https://cdn.simpleicons.org/anthropic/000000" },
+                { name: "LangGraph", desc: "Agentic Flow", iconUrl: "https://cdn.simpleicons.org/langchain/1C3C3C" },
+                { name: "OpenCode", desc: "RCA Agent Tree", iconUrl: "https://cdn.simpleicons.org/github/181717" },
+                { name: "React", desc: "UI Core", iconUrl: "https://cdn.simpleicons.org/react/61DAFB" }
+              ].map((tech, i) => (
+                <div key={i} className="pro-card p-6 flex flex-col items-start hover:border-[var(--accent)] hover:bg-[var(--accent-light)] transition-colors group">
+                  <div className="w-10 h-10 rounded-md bg-slate-50 flex items-center justify-center mb-4 border border-[var(--border-strong)] group-hover:bg-white transition-colors">
+                    {/* Applying a slight opacity so it blends nicely, but keeps original distinct brand colors if loaded via CDN */}
+                    <img src={tech.iconUrl} alt={tech.name} className="w-6 h-6 object-contain" />
+                  </div>
+                  <h4 className="font-medium text-slate-900 mb-1">{tech.name}</h4>
+                  <p className="text-xs text-[var(--text-muted)]">{tech.desc}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
       </main>
+
+      <footer className="bg-slate-900 text-slate-300 py-16 px-6 border-t border-slate-800">
+        <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-start md:items-center gap-8">
+          <div>
+            <span className="font-display text-2xl font-semibold tracking-tight text-white block mb-1">Mamba<span className="text-[var(--accent)]">_RCA</span></span>
+            <span className="text-sm text-slate-500">Intelligence Orchestration Layer</span>
+          </div>
+          <div className="text-sm flex flex-col items-end gap-2">
+            <span className="bg-slate-800 px-3 py-1 rounded-md mb-2">Terminal 0x1</span>
+            <span className="flex items-center gap-2 text-emerald-400">
+              <span className="relative flex h-2.5 w-2.5">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+              </span>
+              Status: Operational
+            </span>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }
