@@ -1,19 +1,19 @@
 @import "tailwindcss";
 
 @theme {
-  --font-display: "Clash Display", sans-serif;
+  --font-sans: "Inter", system-ui, sans-serif;
   --font-mono: "Space Mono", monospace;
-  --color-primary: #3b82f6;
+  --color-primary: #000000;
   --color-surface: #ffffff;
 }
 
 :root {
-  --bg-base: #f8fafc;
+  --bg-base: #fafafa;
   --bg-surface: #ffffff;
-  --text-main: #0f172a;
-  --text-muted: #64748b;
-  --border-strong: #e2e8f0;
-  --border-light: #f1f5f9;
+  --text-main: #111827;
+  --text-muted: #4b5563;
+  --border-strong: #e5e7eb;
+  --border-light: #f3f4f6;
   --accent: #2563eb;
   --accent-light: #eff6ff;
 }
@@ -26,44 +26,61 @@ body {
   margin: 0;
   overflow-x: hidden;
   line-height: 1.6;
+  font-family: var(--font-sans);
 }
 
 .pro-card {
   background: var(--bg-surface);
   border: 1px solid var(--border-strong);
-  border-radius: 12px;
-  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05), 0 2px 4px -2px rgb(0 0 0 / 0.05);
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
   transition: all 0.2s ease;
 }
 
 .pro-card:hover {
-  box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
-  transform: translateY(-2px);
-  border-color: #cbd5e1;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+  border-color: #d1d5db;
 }
 
 .pro-button {
-  background: var(--text-main);
-  color: var(--bg-surface);
+  background: #000000;
+  color: #ffffff;
   border-radius: 6px;
   font-family: inherit;
   cursor: pointer;
   font-weight: 500;
   transition: all 0.2s ease;
   border: 1px solid transparent;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .pro-button:hover {
-  background: var(--accent);
-  color: #fff;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 6px -1px rgb(37 99 235 / 0.1);
+  background: #1f2937;
+}
+
+.pro-button-secondary {
+  background: #ffffff;
+  color: #111827;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-family: inherit;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pro-button-secondary:hover {
+  background: #f9fafb;
 }
 
 .subtle-grid {
-  background-size: 32px 32px;
+  background-size: 40px 40px;
   background-image:
-    linear-gradient(to right, rgba(0,0,0,0.03) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(0,0,0,0.03) 1px, transparent 1px);
+    linear-gradient(to right, rgba(0,0,0,0.04) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(0,0,0,0.04) 1px, transparent 1px);
 }
-

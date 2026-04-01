@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { CheckCircle2, Clock3, Database, ExternalLink, Search, XCircle } from 'lucide-react';
+import { CheckCircle2, Clock3, Database, ExternalLink, Search, XCircle, LayoutDashboard, FileText, Activity } from 'lucide-react';
 
 type DateLike = string | { $date?: string } | null | undefined;
 
@@ -246,62 +246,86 @@ export default function RequestsDashboardPage() {
   }, [ticket]);
 
   return (
-    <main style={{ minHeight: '100vh', padding: '28px 20px 64px', background: 'linear-gradient(180deg, #f8fafc 0%, #eef4fb 100%)' }}>
-      <section style={{ maxWidth: 1120, margin: '0 auto' }}>
-        <header style={{ display: 'flex', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', marginBottom: 18, alignItems: 'center' }}>
-          <div>
-            <p style={{ margin: 0, fontSize: 11, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#64748b', fontWeight: 700 }}>
-              MongoDB Ticket Dashboard
-            </p>
-            <h1 style={{ margin: '6px 0 0', fontSize: 'clamp(28px,4vw,42px)', lineHeight: 1.05, color: '#0f172a', fontFamily: 'var(--font-display)' }}>
-              LLM View + Important Fields
-            </h1>
+    <div className="font-sans bg-slate-50 text-slate-900 min-h-screen">
+      <nav className="fixed top-0 w-full z-50 bg-white border-b border-slate-200">
+        <div className="flex justify-between items-center max-w-7xl mx-auto px-6 h-16">
+          <div className="flex items-center gap-4">
+            <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+              <div className="w-8 h-8 bg-black flex items-center justify-center rounded">
+                <span className="text-white font-bold text-lg leading-none">M</span>
+              </div>
+              <span className="font-semibold text-xl tracking-tight text-slate-900 hidden sm:inline">Mamba <span className="font-light text-slate-500">RCA</span></span>
+            </Link>
+            <div className="hidden md:block w-px h-6 bg-slate-200"></div>
+            <div className="hidden md:flex items-center gap-2 text-sm font-semibold text-slate-700 bg-slate-100 border border-slate-200 px-3 py-1 rounded">
+              <LayoutDashboard size={14} /> Orchestrator Dashboard
+            </div>
           </div>
+          <div className="flex items-center gap-4">
+            <Link href="/" className="pro-button-secondary px-4 py-2 text-xs hidden sm:flex items-center">Home</Link>
+            <Link href="/sandbox" className="pro-button px-4 py-2 text-xs hidden sm:flex items-center">Sandbox</Link>
+          </div>
+        </div>
+      </nav>
 
-          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
-            <Link href="/" style={navButtonStyle}>Home</Link>
-            <Link href="/sandbox" style={navButtonStyle}>Sandbox</Link>
-          </div>
+      <main className="pt-24 pb-20 px-6 max-w-5xl mx-auto">
+        <header className="mb-8">
+          <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-slate-900 mb-2">Observability Dashboard</h1>
+          <p className="text-slate-500 text-lg">Monitor the Mamba RCA pipeline and sandbox error traces.</p>
         </header>
 
-        <section style={{ ...cardStyle, display: 'grid', gap: 12 }}>
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-            <span style={{ ...badgeStyle, background: '#eff6ff', color: '#1e40af', border: '1px solid #bfdbfe' }}>
-              FastAPI Recent List
-            </span>
-            <span style={{ ...badgeStyle, background: '#f8fafc', color: '#334155', border: '1px solid #e2e8f0' }}>
-              Last 5 Recent
-            </span>
-            {!!activeRequestId && (
-              <button onClick={() => { setInputId(''); setActiveRequestId(''); setTicket(null); setError(''); }} style={secondaryButtonStyle}>
-                Back To Recent
-              </button>
-            )}
+        <section className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 mb-6">
+          <div className="flex flex-col md:flex-row gap-4 justify-between items-start md:items-center mb-6">
+            <div className="flex items-center gap-3">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-100 border border-slate-200 text-slate-700 text-xs font-semibold">
+                <Activity size={12} /> Live Trace Active
+              </span>
+              {!!activeRequestId && (
+                <button 
+                  onClick={() => { setInputId(''); setActiveRequestId(''); setTicket(null); setError(''); }} 
+                  className="pro-button-secondary px-3 py-1.5 text-xs"
+                >
+                  Clear Selection
+                </button>
+              )}
+            </div>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <Search size={16} color="#64748b" />
+          <div className="flex items-center gap-3 bg-slate-50 p-2 rounded-lg border border-slate-200">
+            <div className="pl-3 text-slate-400">
+              <Search size={20} />
+            </div>
             <input
               value={inputId}
               onChange={(e) => setInputId(e.target.value)}
-              placeholder="Paste requestId"
-              style={{ width: '100%', border: '1px solid #d8dee9', borderRadius: 10, padding: '10px 12px', fontSize: 14, outline: 'none', background: '#fff' }}
+              placeholder="Enter Request ID (e.g. req-12345)"
+              className="w-full bg-transparent border-none outline-none text-slate-900 placeholder:text-slate-400 font-mono text-sm py-2"
+              onKeyDown={(e) => { if (e.key === 'Enter') setActiveRequestId(inputId.trim()); }}
             />
-            <button onClick={() => setActiveRequestId(inputId.trim())} style={primaryButtonStyle}>Load</button>
+            <button 
+              onClick={() => setActiveRequestId(inputId.trim())} 
+              className="pro-button px-6 py-2 text-sm"
+            >
+              Trace Request
+            </button>
           </div>
 
-          <p style={{ margin: 0, fontSize: 13, color: '#475569' }}>
-            {loading ? 'Loading ticket...' : activeRequestId ? `Showing requestId: ${activeRequestId}` : 'Enter requestId or pick from recent live tickets.'}
-          </p>
-          {!!error && <p style={{ margin: 0, color: '#b91c1c', fontSize: 13 }}>{error}</p>}
-          {!!recentError && !activeRequestId && <p style={{ margin: 0, color: '#b91c1c', fontSize: 13 }}>{recentError}</p>}
+          <div className="mt-4">
+            <p className="text-sm text-slate-500 font-medium">
+              {loading ? 'Fetching records from MongoDB...' : activeRequestId ? `Viewing ID: ${activeRequestId}` : 'Enter an ID or select from recent sandbox requests.'}
+            </p>
+            {!!error && <p className="mt-2 text-sm text-rose-600 bg-rose-50 px-3 py-2 rounded border border-rose-100">{error}</p>}
+            {!!recentError && !activeRequestId && <p className="mt-2 text-sm text-rose-600 bg-rose-50 px-3 py-2 rounded border border-rose-100">{recentError}</p>}
+          </div>
         </section>
 
         {!activeRequestId && (
-        <section style={{ ...cardStyle, marginTop: 12 }}>
-          <h2 style={sectionTitleStyle}>Last 5 Recent Requests (FastAPI)</h2>
-          <div style={{ marginTop: 10, display: 'grid', gap: 8 }}>
-            {recent.length === 0 && <p style={{ margin: 0, color: '#64748b', fontSize: 13 }}>No recent requests found.</p>}
+        <section className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+          <h2 className="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2">
+            <Clock3 size={18} className="text-slate-400" /> Recent Faults & Requests
+          </h2>
+          <div className="grid gap-3">
+            {recent.length === 0 && <p className="text-sm text-slate-500 bg-slate-50 p-4 rounded border border-slate-100 text-center">No recent requests found in the system.</p>}
             {recent.map((item) => (
               <button
                 key={item.requestId}
@@ -309,22 +333,31 @@ export default function RequestsDashboardPage() {
                   setInputId(item.requestId);
                   setActiveRequestId(item.requestId);
                 }}
-                style={{
-                  border: '1px solid #dbe3ef',
-                  background: activeRequestId === item.requestId ? '#eaf2ff' : '#fff',
-                  borderRadius: 10,
-                  padding: '9px 10px',
-                  textAlign: 'left',
-                  cursor: 'pointer',
-                }}
+                className={`flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded border transition-all text-left group
+                  ${activeRequestId === item.requestId 
+                    ? 'border-slate-800 bg-slate-50 ring-1 ring-slate-800' 
+                    : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50 bg-white'
+                  }`}
               >
-                <p style={{ margin: 0, fontSize: 12, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 700 }}>
-                  {(item.requestType ?? 'ticket').toLowerCase()} · {new Date(item.createdAt).toLocaleString()}
-                </p>
-                <p style={{ margin: '4px 0 0', fontSize: 13, color: '#0f172a', fontWeight: 700 }}>{item.requestId}</p>
-                <p style={{ margin: '3px 0 0', fontSize: 12, color: '#475569' }}>
-                  {(item.reviewType ?? 'N/A')} · {(item.status ?? 'N/A')} · {stepLabels[item.currentStep ?? ''] ?? item.currentStep ?? 'N/A'}
-                </p>
+                <div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="font-mono text-sm font-semibold text-slate-900">{item.requestId}</span>
+                    <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-slate-200 text-slate-700 transition-colors">
+                      {item.requestType ?? 'ticket'}
+                    </span>
+                  </div>
+                  <p className="text-xs font-medium text-slate-500">
+                    {new Date(item.createdAt).toLocaleString()}
+                  </p>
+                </div>
+                <div className="mt-2 sm:mt-0 sm:text-right">
+                  <p className="text-sm font-medium text-slate-700 capitalize">
+                    {item.status ?? 'Processing'}
+                  </p>
+                  <p className="text-xs text-slate-500">
+                    {stepLabels[item.currentStep ?? ''] ?? item.currentStep ?? 'N/A'}
+                  </p>
+                </div>
               </button>
             ))}
           </div>
@@ -332,306 +365,208 @@ export default function RequestsDashboardPage() {
         )}
 
         {ticket && (
-          <>
-            <section style={{ ...cardStyle, marginTop: 12, display: 'grid', gap: 10 }}>
-              <h2 style={sectionTitleStyle}>Workflow Outcome</h2>
+          <div className="space-y-6">
+            <section className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+              <h2 className="text-lg font-bold text-slate-900 mb-4">Pipeline Resolution</h2>
               {rcaInvoked && (
-                <div style={outcomeGreenStyle}>
-                  <CheckCircle2 size={18} />
+                <div className="flex gap-4 items-start p-4 rounded bg-slate-50 border border-slate-200">
+                  <CheckCircle2 size={24} className="text-emerald-500 shrink-0" />
                   <div>
-                    <p style={outcomeTitleStyle}>RCA Agent Invoked</p>
-                    <p style={outcomeSubStyle}>{ticket.workflow?.rca?.summary ?? ticket.statusMessage ?? 'OpenCode RCA completed.'}</p>
+                    <h3 className="font-semibold text-slate-900">RCA Engine Active</h3>
+                    <p className="text-sm text-slate-600 mt-1 leading-relaxed">{ticket.workflow?.rca?.summary ?? ticket.statusMessage ?? 'OpenCode executed source analysis.'}</p>
                   </div>
                 </div>
               )}
               {rcaSkippedDuplicate && (
-                <div style={outcomeBlueStyle}>
-                  <Clock3 size={18} />
+                <div className="flex gap-4 items-start p-4 rounded bg-slate-50 border border-slate-200">
+                  <Clock3 size={24} className="text-blue-500 shrink-0" />
                   <div>
-                    <p style={outcomeTitleStyle}>RCA Agent Not Invoked</p>
-                    <p style={outcomeSubStyle}>
-                      Duplicate matched: {ticket.workflow?.dedup?.matchedRecordId ?? ticket.rca?.result?.matchedRequestId ?? 'N/A'}
+                    <h3 className="font-semibold text-slate-900">Vector Deduplication Match</h3>
+                    <p className="text-sm text-slate-600 mt-1 leading-relaxed">
+                      Halting computation. Matched existing record: <span className="font-mono bg-slate-200 px-1 py-0.5 rounded text-xs">{ticket.workflow?.dedup?.matchedRecordId ?? ticket.rca?.result?.matchedRequestId ?? 'N/A'}</span>
                     </p>
                   </div>
                 </div>
               )}
               {!rcaInvoked && !rcaSkippedDuplicate && (
-                <div style={outcomeGrayStyle}>
-                  <XCircle size={18} />
+                <div className="flex gap-4 items-start p-4 rounded bg-slate-50 border border-slate-200">
+                  <XCircle size={24} className="text-slate-400 shrink-0" />
                   <div>
-                    <p style={outcomeTitleStyle}>Outcome Unclear</p>
-                    <p style={outcomeSubStyle}>Status: {ticket.status ?? 'N/A'} | Step: {ticket.currentStep ?? 'N/A'}</p>
+                    <h3 className="font-semibold text-slate-900">Trace In Progress</h3>
+                    <p className="text-sm text-slate-600 mt-1">Status: {ticket.status ?? 'N/A'} | Step: {ticket.currentStep ?? 'N/A'}</p>
                   </div>
                 </div>
               )}
             </section>
 
-            <section style={{ ...cardStyle, marginTop: 12 }}>
-              <h2 style={sectionTitleStyle}>Core Ticket Fields</h2>
-              <div style={gridStyle}>
-                <Field label="requestId" value={ticket.requestId} />
-                <Field label="status" value={ticket.status} />
-                <Field label="currentStep" value={ticket.currentStep} />
-                <Field label="requestType" value={ticket.requestType} />
-                <Field label="reviewType" value={ticket.reviewType} />
-                <Field label="primaryChoice" value={ticket.primaryChoice} />
-                <Field label="documentType" value={ticket.documentType} />
-                <Field label="pipelineVersion" value={ticket.pipelineVersion} />
-                <Field label="createdAt" value={readDate(ticket.createdAt)} />
-                <Field label="updatedAt" value={readDate(ticket.updatedAt)} />
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <section className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+                <h2 className="text-lg font-bold text-slate-900 mb-4">Trace Identity</h2>
+                <div className="grid grid-cols-2 gap-4">
+                  <Field label="Request ID" value={ticket.requestId} mono />
+                  <Field label="Status" value={ticket.status} />
+                  <Field label="Current Step" value={ticket.currentStep} />
+                  <Field label="Request Type" value={ticket.requestType} />
+                  <Field label="Created At" value={readDate(ticket.createdAt)} />
+                  <Field label="Updated At" value={readDate(ticket.updatedAt)} />
+                </div>
+              </section>
+
+              <section className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+                <h2 className="text-lg font-bold text-slate-900 mb-4">Orchestrator Routing</h2>
+                <div className="grid grid-cols-2 gap-4">
+                  <Field label="Planned Flow" value={ticket.workflow?.rag?.decision?.flow ?? 'N/A'} />
+                  <Field label="Decision Status" value={ticket.workflow?.dedup?.status ?? ticket.workflow?.rca?.status ?? 'N/A'} />
+                  <Field
+                    label="Matched ID"
+                    mono
+                    value={
+                      ticket.workflow?.dedup?.matchedRecordId ??
+                      ticket.workflow?.rag?.decision?.matched_request_id ??
+                      ticket.rca?.result?.matchedRequestId ??
+                      'N/A'
+                    }
+                  />
+                  <Field
+                    label="Match Score"
+                    value={
+                      ticket.workflow?.rag?.decision?.matched_score != null
+                        ? String(ticket.workflow?.rag?.decision?.matched_score)
+                        : ticket.rca?.result?.score != null
+                        ? String(ticket.rca?.result?.score)
+                        : 'N/A'
+                    }
+                  />
+                </div>
+                
+                {ticket.workflow?.rag?.decision?.rationale && (
+                  <div className="mt-4 pt-4 border-t border-slate-100">
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Rationale</p>
+                    <p className="text-sm text-slate-700 leading-relaxed bg-slate-50 p-3 rounded border border-slate-100">{ticket.workflow.rag.decision.rationale}</p>
+                  </div>
+                )}
+              </section>
+            </div>
+
+            <section className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+              <h2 className="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2">
+                <FileText size={18} className="text-slate-400" /> AI Triage Summary
+              </h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                <Field label="Summary" value={ticket.triage?.summary} />
+                <Field label="Error Type" value={ticket.triage?.errorType} />
+                <Field label="Severity" value={ticket.triage?.severity} />
+                <Field label="System Context" value={ticket.triage?.systemContext} />
               </div>
-            </section>
 
-            <section style={{ ...cardStyle, marginTop: 12 }}>
-              <h2 style={sectionTitleStyle}>Plan (Flow Decision)</h2>
-              <div style={gridStyle}>
-                <Field label="plannedFlow" value={ticket.workflow?.rag?.decision?.flow ?? 'N/A'} />
-                <Field label="decisionStatus" value={ticket.workflow?.dedup?.status ?? ticket.workflow?.rca?.status ?? 'N/A'} />
-                <Field
-                  label="matchedRequestId"
-                  value={
-                    ticket.workflow?.dedup?.matchedRecordId ??
-                    ticket.workflow?.rag?.decision?.matched_request_id ??
-                    ticket.rca?.result?.matchedRequestId ??
-                    'N/A'
-                  }
-                />
-                <Field
-                  label="matchScore"
-                  value={
-                    ticket.workflow?.rag?.decision?.matched_score != null
-                      ? String(ticket.workflow?.rag?.decision?.matched_score)
-                      : ticket.rca?.result?.score != null
-                      ? String(ticket.rca?.result?.score)
-                      : 'N/A'
-                  }
-                />
-              </div>
+              {ticket.triage?.structuredProblem && (
+                <div className="mb-4">
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Structured Problem</p>
+                  <p className="text-sm text-slate-700 leading-relaxed bg-slate-50 p-4 rounded border border-slate-100">{ticket.triage.structuredProblem}</p>
+                </div>
+              )}
 
-              <p style={longTextLabelStyle}>rationale</p>
-              <p style={longTextValueStyle}>{ticket.workflow?.rag?.decision?.rationale ?? 'N/A'}</p>
-
-              <p style={longTextLabelStyle}>executionSummary</p>
-              <p style={longTextValueStyle}>{ticket.workflow?.rca?.summary ?? ticket.statusMessage ?? 'N/A'}</p>
-            </section>
-
-            <section style={{ ...cardStyle, marginTop: 12 }}>
-              <h2 style={sectionTitleStyle}>LLM Sees (Triage View)</h2>
-              <div style={gridStyle}>
-                <Field label="summary" value={ticket.triage?.summary} />
-                <Field label="errorType" value={ticket.triage?.errorType} />
-                <Field label="severity" value={ticket.triage?.severity} />
-                <Field label="systemContext" value={ticket.triage?.systemContext} />
-                <Field label="pageContext" value={ticket.triage?.pageContext} />
-              </div>
-
-              <p style={longTextLabelStyle}>structuredProblem</p>
-              <p style={longTextValueStyle}>{ticket.triage?.structuredProblem ?? 'N/A'}</p>
-
-              <p style={longTextLabelStyle}>impactAssessment</p>
-              <p style={longTextValueStyle}>{ticket.triage?.impactAssessment ?? 'N/A'}</p>
+              {ticket.triage?.impactAssessment && (
+                <div className="mb-4">
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Impact Assessment</p>
+                  <p className="text-sm text-slate-700 leading-relaxed bg-slate-50 p-4 rounded border border-slate-100">{ticket.triage.impactAssessment}</p>
+                </div>
+              )}
 
               {(ticket.triage?.dataGaps?.length ?? 0) > 0 && (
-                <>
-                  <p style={longTextLabelStyle}>dataGaps</p>
-                  <ul style={{ margin: '4px 0 0', color: '#334155', fontSize: 13 }}>
-                    {ticket.triage?.dataGaps?.slice(0, 4).map((gap) => (
-                      <li key={gap}>{gap}</li>
+                <div className="mt-4">
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Data Gaps</p>
+                  <ul className="space-y-2">
+                    {ticket.triage?.dataGaps?.slice(0, 4).map((gap, i) => (
+                      <li key={i} className="flex items-start gap-2 text-sm text-slate-700">
+                        <div className="w-1.5 h-1.5 rounded-full bg-slate-300 mt-1.5 shrink-0" />
+                        <span>{gap}</span>
+                      </li>
                     ))}
                   </ul>
-                </>
+                </div>
               )}
             </section>
 
-            <section style={{ ...cardStyle, marginTop: 12 }}>
-              <h2 style={sectionTitleStyle}>Intake + Fingerprints</h2>
-              <div style={gridStyle}>
-                <Field label="issueFingerprint" value={ticket.intake?.issueFingerprint} mono />
-                <Field label="issueDescriptionHash" value={ticket.intake?.issueDescriptionHash} mono />
-                <Field label="submittedAt" value={readDate(ticket.intake?.submittedAt)} />
-                <Field label="receivedImageCount" value={String(ticket.intake?.receivedImageCount ?? 0)} />
-              </div>
-            </section>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <section className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+                <h2 className="text-lg font-bold text-slate-900 mb-4">Intake Signatures</h2>
+                <div className="grid gap-4">
+                  <Field label="Issue Fingerprint" value={ticket.intake?.issueFingerprint} mono />
+                  <Field label="Description Hash" value={ticket.intake?.issueDescriptionHash} mono />
+                  <Field label="Received Images" value={String(ticket.intake?.receivedImageCount ?? 0)} />
+                </div>
+              </section>
 
-            <section style={{ ...cardStyle, marginTop: 12 }}>
-              <h2 style={sectionTitleStyle}>Artifacts</h2>
-              <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-                {ticket.artifactUrls?.output?.[0] && (
-                  <a href={ticket.artifactUrls.output[0]} target="_blank" rel="noreferrer" style={artifactStyle}>
-                    <Database size={14} /> Output <ExternalLink size={12} />
-                  </a>
-                )}
-                {ticket.artifactUrls?.logs?.[0] && (
-                  <a href={ticket.artifactUrls.logs[0]} target="_blank" rel="noreferrer" style={artifactStyle}>
-                    <Database size={14} /> Logs <ExternalLink size={12} />
-                  </a>
-                )}
-              </div>
-            </section>
+              <section className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 flex flex-col">
+                <h2 className="text-lg font-bold text-slate-900 mb-4">Artifacts & Storage</h2>
+                <p className="text-sm text-slate-500 mb-6">Storage objects managed by Cloudflare R2.</p>
+                
+                <div className="flex flex-wrap gap-3 mt-auto">
+                  {ticket.artifactUrls?.output?.[0] ? (
+                    <a href={ticket.artifactUrls.output[0]} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 px-4 py-2 bg-slate-50 border border-slate-200 hover:border-slate-300 hover:bg-slate-100 rounded text-sm font-medium text-slate-700 transition-colors">
+                      <Database size={16} className="text-slate-600" /> Output Artifact <ExternalLink size={14} className="text-slate-400" />
+                    </a>
+                  ) : (
+                    <div className="inline-flex items-center gap-2 px-4 py-2 bg-slate-50 border border-slate-100 rounded text-sm font-medium text-slate-400">
+                      <Database size={16} /> No Output Artifacts
+                    </div>
+                  )}
+                  {ticket.artifactUrls?.logs?.[0] ? (
+                    <a href={ticket.artifactUrls.logs[0]} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 px-4 py-2 bg-slate-50 border border-slate-200 hover:border-slate-300 hover:bg-slate-100 rounded text-sm font-medium text-slate-700 transition-colors">
+                      <Database size={16} className="text-slate-600" /> System Logs <ExternalLink size={14} className="text-slate-400" />
+                    </a>
+                  ) : (
+                    <div className="inline-flex items-center gap-2 px-4 py-2 bg-slate-50 border border-slate-100 rounded text-sm font-medium text-slate-400">
+                      <Database size={16} /> No Log Artifacts
+                    </div>
+                  )}
+                </div>
+              </section>
+            </div>
 
-            <section style={{ ...cardStyle, marginTop: 12 }}>
-              <h2 style={sectionTitleStyle}>Status Timeline</h2>
-              <div style={{ display: 'grid', gap: 8, marginTop: 8 }}>
-                {timeline.map((item) => (
-                  <div key={item.id} style={{ border: '1px solid #e2e8f0', borderRadius: 10, padding: '8px 10px', background: item.done ? '#ecfdf5' : '#fff' }}>
-                    <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: '#0f172a' }}>{item.title}</p>
-                    <p style={{ margin: '2px 0 0', fontSize: 12, color: '#475569' }}>{item.message}</p>
-                    <p style={{ margin: '2px 0 0', fontSize: 11, color: '#64748b' }}>{item.at}</p>
+            <section className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+              <h2 className="text-lg font-bold text-slate-900 mb-6">Pipeline Timeline</h2>
+              <div className="space-y-4">
+                {timeline.length === 0 && <p className="text-sm text-slate-500">No timeline data available.</p>}
+                {timeline.map((item, i) => (
+                  <div key={item.id} className="relative pl-6 pb-4 last:pb-0">
+                    {/* Timeline line */}
+                    {i !== timeline.length - 1 && (
+                      <div className="absolute left-[11px] top-6 bottom-0 w-px bg-slate-200" />
+                    )}
+                    {/* Timeline dot */}
+                    <div className={`absolute left-0 top-1.5 w-6 h-6 rounded-full border-2 bg-white flex items-center justify-center
+                      ${item.done ? 'border-slate-800' : 'border-slate-300'}`}
+                    >
+                      {item.done && <div className="w-2.5 h-2.5 bg-slate-800 rounded-full" />}
+                    </div>
+                    
+                    <div className={`p-4 rounded border ${item.done ? 'bg-slate-50 border-slate-200' : 'bg-white border-slate-100'}`}>
+                      <div className="flex justify-between items-start gap-4 mb-1">
+                        <h4 className="font-bold text-slate-900 text-sm">{item.title}</h4>
+                        <span className="text-[10px] font-mono text-slate-500 whitespace-nowrap bg-white px-2 py-0.5 rounded shadow-sm border border-slate-100">{item.at}</span>
+                      </div>
+                      <p className="text-sm text-slate-600">{item.message || 'Processing step.'}</p>
+                    </div>
                   </div>
                 ))}
               </div>
             </section>
-          </>
+          </div>
         )}
-      </section>
-    </main>
+      </main>
+    </div>
   );
 }
 
 function Field({ label, value, mono = false }: { label: string; value?: string | null; mono?: boolean }) {
   return (
-    <div style={{ border: '1px solid #e2e8f0', borderRadius: 10, padding: '9px 10px', background: '#fff' }}>
-      <p style={{ margin: 0, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.06em', color: '#64748b', fontWeight: 700 }}>
-        {label}
-      </p>
-      <p style={{ margin: '4px 0 0', fontSize: 13, color: '#0f172a', fontWeight: 600, fontFamily: mono ? 'var(--font-mono)' : 'inherit', wordBreak: 'break-word' }}>
+    <div className="flex flex-col justify-center">
+      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">{label}</span>
+      <span className={`text-sm text-slate-900 ${mono ? 'font-mono text-xs bg-slate-50 px-2 py-1 rounded border border-slate-200' : 'font-medium'} break-words`}>
         {value || 'N/A'}
-      </p>
+      </span>
     </div>
   );
 }
-
-const cardStyle: React.CSSProperties = {
-  background: 'rgba(255,255,255,0.92)',
-  border: '1px solid #dce4ee',
-  borderRadius: 14,
-  padding: 14,
-  boxShadow: '0 8px 24px rgba(15, 23, 42, 0.05)',
-};
-
-const sectionTitleStyle: React.CSSProperties = {
-  margin: 0,
-  fontSize: 17,
-  fontFamily: 'var(--font-display)',
-  color: '#0f172a',
-};
-
-const gridStyle: React.CSSProperties = {
-  marginTop: 10,
-  display: 'grid',
-  gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
-  gap: 8,
-};
-
-const primaryButtonStyle: React.CSSProperties = {
-  border: 'none',
-  background: '#0f172a',
-  color: '#fff',
-  borderRadius: 8,
-  padding: '10px 14px',
-  fontSize: 13,
-  fontWeight: 700,
-  cursor: 'pointer',
-  lineHeight: 1,
-};
-
-const badgeStyle: React.CSSProperties = {
-  borderRadius: 999,
-  padding: '6px 10px',
-  fontSize: 12,
-  fontWeight: 700,
-  lineHeight: 1,
-};
-
-const navButtonStyle: React.CSSProperties = {
-  ...primaryButtonStyle,
-  textDecoration: 'none',
-  display: 'inline-flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-};
-
-const secondaryButtonStyle: React.CSSProperties = {
-  border: '1px solid #cbd5e1',
-  background: '#fff',
-  color: '#0f172a',
-  borderRadius: 8,
-  padding: '10px 14px',
-  fontSize: 13,
-  fontWeight: 700,
-  cursor: 'pointer',
-  lineHeight: 1,
-};
-
-const outcomeTitleStyle: React.CSSProperties = {
-  margin: 0,
-  fontSize: 14,
-  color: '#0f172a',
-  fontWeight: 700,
-};
-
-const outcomeSubStyle: React.CSSProperties = {
-  margin: '2px 0 0',
-  fontSize: 13,
-  color: '#334155',
-};
-
-const outcomeGreenStyle: React.CSSProperties = {
-  display: 'flex',
-  gap: 8,
-  alignItems: 'flex-start',
-  border: '1px solid #bbf7d0',
-  background: '#f0fdf4',
-  borderRadius: 10,
-  padding: 10,
-};
-
-const outcomeBlueStyle: React.CSSProperties = {
-  display: 'flex',
-  gap: 8,
-  alignItems: 'flex-start',
-  border: '1px solid #bfdbfe',
-  background: '#eff6ff',
-  borderRadius: 10,
-  padding: 10,
-};
-
-const outcomeGrayStyle: React.CSSProperties = {
-  display: 'flex',
-  gap: 8,
-  alignItems: 'flex-start',
-  border: '1px solid #e2e8f0',
-  background: '#f8fafc',
-  borderRadius: 10,
-  padding: 10,
-};
-
-const longTextLabelStyle: React.CSSProperties = {
-  margin: '10px 0 0',
-  fontSize: 11,
-  textTransform: 'uppercase',
-  letterSpacing: '0.06em',
-  color: '#64748b',
-  fontWeight: 700,
-};
-
-const longTextValueStyle: React.CSSProperties = {
-  margin: '4px 0 0',
-  fontSize: 13,
-  color: '#1f2937',
-  lineHeight: 1.6,
-};
-
-const artifactStyle: React.CSSProperties = {
-  textDecoration: 'none',
-  color: '#1e3a8a',
-  border: '1px solid #bfdbfe',
-  background: '#eff6ff',
-  borderRadius: 999,
-  padding: '6px 10px',
-  fontSize: 12,
-  fontWeight: 700,
-  display: 'inline-flex',
-  gap: 6,
-  alignItems: 'center',
-};

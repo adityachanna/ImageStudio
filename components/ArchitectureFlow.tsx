@@ -89,7 +89,14 @@ const initialNodes: Node[] = [
     id: 'dup',
     type: 'customNode',
     position: { x: 800, y: 150 },
-    data: { label: 'Duplicate Found', subLabel: 'Update DB & Halt', status: 'Halted', statusColor: 'bg-rose-500', icon: 'content_copy', iconBg: 'bg-white border border-slate-200 text-slate-600', bg: 'bg-slate-50', source: false, target: true },
+    data: { label: 'Duplicate Found', subLabel: 'Update DB & Halt', status: 'Halted', statusColor: 'bg-rose-500', icon: 'content_copy', iconBg: 'bg-white border border-slate-200 text-slate-600', bg: 'bg-slate-50', source: true, target: true },
+    draggable: true,
+  },
+  {
+    id: 'dup_comment',
+    type: 'customNode',
+    position: { x: 1150, y: 150 },
+    data: { label: 'GitHub Sync', subLabel: 'Comment on Issue', status: 'Pending', statusColor: 'bg-slate-400', icon: 'chat', iconBg: 'bg-slate-800 text-white', bg: 'bg-slate-50', source: false, target: true },
     draggable: true,
   },
   {
@@ -102,8 +109,15 @@ const initialNodes: Node[] = [
   {
     id: 'db',
     type: 'customNode',
-    position: { x: 1200, y: 450 },
-    data: { label: 'Save Report', subLabel: 'Write DB Context', status: 'Pending', statusColor: 'bg-slate-400', icon: 'database', iconBg: 'bg-slate-800 text-white', bg: 'bg-slate-50', source: false, target: true },
+    position: { x: 1150, y: 450 },
+    data: { label: 'Save Report', subLabel: 'Write DB Context', status: 'Pending', statusColor: 'bg-slate-400', icon: 'database', iconBg: 'bg-slate-800 text-white', bg: 'bg-slate-50', source: true, target: true },
+    draggable: true,
+  },
+  {
+    id: 'github_issue',
+    type: 'customNode',
+    position: { x: 1450, y: 450 },
+    data: { label: 'GitHub Sync', subLabel: 'Create Issue / PR', status: 'Pending', statusColor: 'bg-slate-400', icon: 'code', iconBg: 'bg-slate-800 text-white', bg: 'bg-slate-50', source: false, target: true },
     draggable: true,
   },
 ];
@@ -117,8 +131,10 @@ const edgeDefault = {
 const initialEdges: Edge[] = [
   { id: 'e-1', source: 'user', target: 'master', label: 'SYS_DATA', style: { stroke: '#cbd5e1', strokeWidth: 2, strokeDasharray: '5 5' }, markerEnd: { type: MarkerType.ArrowClosed, color: '#cbd5e1' } },
   { id: 'e-2', source: 'master', target: 'dup', label: 'RTE_DUP', ...edgeDefault, animated: false },
+  { id: 'e-2-comment', source: 'dup', target: 'dup_comment', ...edgeDefault, animated: false },
   { id: 'e-3', source: 'master', target: 'code', label: 'RTE_NEW', style: { stroke: '#3b82f6', strokeWidth: 2 }, markerEnd: { type: MarkerType.ArrowClosed, color: '#3b82f6' }, animated: true },
   { id: 'e-4', source: 'code', target: 'db', ...edgeDefault },
+  { id: 'e-5', source: 'db', target: 'github_issue', ...edgeDefault },
 ];
 
 export default function ArchitectureFlow() {

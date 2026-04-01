@@ -1,25 +1,50 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import ArchitectureFlow from '../components/ArchitectureFlow';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
+import { ArrowRight, Terminal, Box, Activity, ShieldCheck, Code, Database, Zap, FileText } from 'lucide-react';
 
 export default function LandingPage() {
+  const fullText = "Automated Root Cause\nAnalysis Pipeline.";
+  const [typedText, setTypedText] = useState('');
+  const [cursorVisible, setCursorVisible] = useState(true);
+
+  useEffect(() => {
+    let currentText = '';
+    let index = 0;
+    const intervalId = setInterval(() => {
+      if (index < fullText.length) {
+        currentText += fullText[index];
+        setTypedText(currentText);
+        index++;
+      } else {
+        clearInterval(intervalId);
+      }
+    }, 50); // Speed of typing
+
+    return () => clearInterval(intervalId);
+  }, []);
+
   return (
-    <div className="font-mono bg-[var(--bg-base)] text-black min-h-screen">
-      <nav className="fixed top-0 w-full z-50 bg-[var(--bg-surface)] border-b border-[var(--border-strong)] shadow-sm">
+    <div className="font-sans bg-white text-slate-900 min-h-screen">
+      {/* Navigation */}
+      <nav className="fixed top-0 w-full z-50 bg-white/90 backdrop-blur-md border-b border-slate-200">
         <div className="flex justify-between items-center max-w-7xl mx-auto px-6 h-16">
           <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-            <span className="font-display font-semibold text-xl tracking-tight text-slate-800">Mamba<span className="text-[var(--accent)]">_RCA</span></span>
+            <div className="w-8 h-8 bg-black flex items-center justify-center rounded">
+              <span className="text-white font-bold text-lg leading-none">M</span>
+            </div>
+            <span className="font-semibold text-xl tracking-tight text-slate-900">Mamba <span className="font-light text-slate-500">RCA</span></span>
           </Link>
-          <div className="hidden md:flex items-center gap-8 font-medium text-sm text-[var(--text-muted)]">
-            <Link href="#architecture" className="hover:text-[var(--text-main)] transition-colors">Architecture</Link>
-            <Link href="/sandbox" className="hover:text-[var(--text-main)] transition-colors">Sandbox</Link>
-            <Link href="/requests" className="hover:text-[var(--text-main)] transition-colors">Tickets / DB</Link>
+          <div className="hidden md:flex items-center gap-8 font-medium text-sm text-slate-600">
+            <Link href="#architecture" className="hover:text-black transition-colors">Architecture</Link>
+            <Link href="#sandbox" className="hover:text-black transition-colors">Image Studio Sandbox</Link>
+            <Link href="/requests" className="hover:text-black transition-colors">Dashboard</Link>
           </div>
           <div className="flex items-center gap-4">
-            <Link href="/requests" className="pro-button px-5 py-2 text-sm bg-blue-600 text-white hover:bg-blue-700">
+            <Link href="/requests" className="pro-button px-5 py-2.5 text-sm bg-black text-white hover:bg-slate-800">
               Open Dashboard
             </Link>
           </div>
@@ -27,82 +52,99 @@ export default function LandingPage() {
       </nav>
 
       <main className="pt-16">
-        <div className="bg-slate-100 border-b border-[var(--border-strong)] py-2 overflow-hidden flex w-full">
-          <motion.div 
-            animate={{ x: ["0%", "-50%"] }} 
-            transition={{ ease: "linear", duration: 80, repeat: Infinity }}
-            className="flex whitespace-nowrap font-medium text-[var(--text-muted)] text-xs w-fit"
-          >
-            {[...Array(2)].map((_, i) => (
-              <div key={i} className="flex shrink-0">
-                <span className="shrink-0 px-2 tracking-widest text-[#3b82f6]">HIGH-PERFORMANCE PIPELINE • DETERMINISTIC AGENTIC CORE • MULTIMODAL INGESTION • ROOT CAUSE ANALYSIS • ZERO-DAY EXPLOIT RESOLUTION •</span>
-                <span className="shrink-0 px-2 tracking-widest text-[#3b82f6]">HIGH-PERFORMANCE PIPELINE • DETERMINISTIC AGENTIC CORE • MULTIMODAL INGESTION • ROOT CAUSE ANALYSIS • ZERO-DAY EXPLOIT RESOLUTION •</span>
-                <span className="shrink-0 px-2 tracking-widest text-[#3b82f6]">HIGH-PERFORMANCE PIPELINE • DETERMINISTIC AGENTIC CORE • MULTIMODAL INGESTION • ROOT CAUSE ANALYSIS • ZERO-DAY EXPLOIT RESOLUTION •</span>
-                <span className="shrink-0 px-2 tracking-widest text-[#3b82f6]">HIGH-PERFORMANCE PIPELINE • DETERMINISTIC AGENTIC CORE • MULTIMODAL INGESTION • ROOT CAUSE ANALYSIS • ZERO-DAY EXPLOIT RESOLUTION •</span>
-              </div>
-            ))}
-          </motion.div>
-        </div>
-
-        <section id="architecture" className="relative min-h-[80vh] flex flex-col items-center justify-center p-6 subtle-grid border-b border-[var(--border-strong)] bg-white">
-          <div className="max-w-5xl mx-auto text-center z-10 w-full mb-12">
-            <h1 className="font-display text-5xl md:text-7xl font-bold tracking-tight mb-6 text-slate-900 leading-tight">
-              <motion.span initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.1 }} className="block">The Engine of</motion.span>
-              <motion.span initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.2 }} className="text-[var(--accent)] block">Resolution.</motion.span>
-            </h1>
-            <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.5, delay: 0.4 }} className="max-w-2xl mx-auto text-lg text-[var(--text-muted)] mb-10">
-              Automated Root Cause Analysis for modern resilient architectures. We pull the failure directly from the source code.
+        {/* Hero Section */}
+        <section className="relative flex flex-col items-center justify-center px-6 pt-32 pb-24 overflow-hidden border-b border-slate-100 bg-slate-50/30 min-h-[85vh]">
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-slate-100 via-white to-white -z-10"></div>
+          
+          <div className="max-w-5xl mx-auto text-center z-10 w-full">
+            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-slate-100 border border-slate-200 text-slate-700 text-sm font-semibold mb-8 shadow-sm">
+              <Activity size={14} className="text-slate-900" />
+              <span>Deterministic Intelligence Layer</span>
+            </motion.div>
+            
+            <div className="h-[140px] md:h-[180px] flex flex-col items-center justify-center mb-6">
+              <h1 className="text-5xl md:text-7xl font-bold tracking-tight text-slate-900 leading-[1.1] whitespace-pre-wrap">
+                {typedText.split('\n').map((line, i) => (
+                  <React.Fragment key={i}>
+                    {i > 0 && <br />}
+                    {i === 1 ? <span className="text-slate-400">{line}</span> : line}
+                  </React.Fragment>
+                ))}
+                <motion.span 
+                  animate={{ opacity: [1, 0] }}
+                  transition={{ repeat: Infinity, duration: 0.8, ease: "linear" }}
+                  className="inline-block w-[3px] h-[0.9em] bg-slate-900 align-middle ml-1 -mt-2"
+                />
+              </h1>
+            </div>
+            
+            <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.5, delay: 1.8 }} className="max-w-2xl mx-auto text-lg md:text-xl text-slate-600 mb-10">
+              Transform raw bug reports and screenshots into actionable engineering insights using multi-agent orchestration. The system performs deep code reading, analyzes test cases, and automatically generates detailed GitHub reports and patch PRs.
             </motion.p>
-            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.5, delay: 0.5 }} className="flex flex-wrap justify-center gap-4">
-              <Link href="/requests" className="pro-button text-base px-8 py-3 bg-blue-600 text-white shadow-md">
-                Open Tickets / DB
+            
+            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 2.0 }} className="flex flex-wrap justify-center gap-4">
+              <Link href="/requests" className="pro-button px-8 py-3.5 text-base flex items-center gap-2 shadow-lg shadow-black/5 hover:shadow-black/10">
+                Launch Dashboard <ArrowRight size={18} />
+              </Link>
+              <Link href="/sandbox" className="pro-button-secondary px-8 py-3.5 text-base flex items-center gap-2 bg-white">
+                <Box size={18} className="text-slate-400" /> Try the Sandbox
               </Link>
             </motion.div>
           </div>
-          
-          <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, delay: 0.6 }} className="w-full max-w-7xl h-[500px] border border-[var(--border-strong)] rounded-xl bg-white shadow-xl relative overflow-hidden">
-             <div className="absolute top-0 left-0 bg-slate-50 text-[var(--text-muted)] px-4 py-2 text-xs font-semibold z-10 border-b border-r border-[var(--border-strong)] rounded-br-lg">System Architecture Node Graph</div>
-             <ArchitectureFlow />
-          </motion.div>
         </section>
 
-        <section className="py-24 px-6 border-b border-[var(--border-strong)] bg-slate-50">
+        {/* The Sandbox Explanation */}
+        <section id="sandbox" className="py-24 px-6 bg-white relative">
           <div className="max-w-6xl mx-auto">
-            <div className="flex justify-between items-end mb-12 border-b border-[var(--border-strong)] pb-4">
-              <h2 className="font-display text-3xl md:text-4xl font-semibold text-slate-800 tracking-tight">Data Execution Path</h2>
-              <span className="text-sm font-medium text-[var(--text-muted)] px-3 py-1 bg-slate-200 rounded-full">Phase 1</span>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="pro-card p-8">
-                <span className="text-4xl font-display font-bold block mb-4 text-[var(--accent)] opacity-80">01.</span>
-                <h3 className="text-xl font-semibold mb-3 text-slate-900">Multimodal Ingestion</h3>
-                <p className="text-sm text-[var(--text-muted)] leading-relaxed">Flash parses raw visual evidence and technical logs to structure absolute constraints.</p>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+              <div>
+                <h2 className="text-3xl md:text-4xl font-bold text-slate-900 tracking-tight mb-6">
+                  Image Studio: <br />The Active Test Environment
+                </h2>
+                <p className="text-slate-600 text-lg mb-6 leading-relaxed">
+                  To demonstrate Mamba RCA's capabilities, we have deployed <strong className="text-slate-900 font-semibold">Image Studio</strong> — a functioning image processing application serving as our live sandbox.
+                </p>
+                <p className="text-slate-600 text-lg mb-8 leading-relaxed">
+                  It contains intentional vulnerabilities and zero-day faults (like a typo in the compression route). When a failure occurs in the sandbox, Mamba RCA intercepts the error, traces the exact line number via its OpenCode agent, and generates a patch PR.
+                </p>
+                
+                <Link href="/sandbox" className="inline-flex items-center gap-2 font-medium text-blue-600 hover:text-blue-700 transition-colors">
+                  Enter the Sandbox Environment <ArrowRight size={16} />
+                </Link>
               </div>
-              <div className="pro-card p-8">
-                <span className="text-4xl font-display font-bold block mb-4 text-[var(--accent)] opacity-80">02.</span>
-                <h3 className="text-xl font-semibold mb-3 text-slate-900">Vector Deduplication</h3>
-                <p className="text-sm text-[var(--text-muted)] leading-relaxed">MongoDB clusters map the exact crash trace against previous events to halt runaway computation.</p>
-              </div>
-              <div className="pro-card p-8">
-                <span className="text-4xl font-display font-bold block mb-4 text-[var(--accent)] opacity-80">03.</span>
-                <div className="flex items-center gap-2 mb-2">
-                  <h3 className="text-xl font-semibold text-slate-900">Code Harness</h3>
-                  <span className="text-[10px] font-medium text-[var(--accent)] bg-blue-50 border border-blue-100 px-2 py-0.5 rounded-full uppercase tracking-wider">OpenCode</span>
+              
+              <div className="relative">
+                <div className="bg-slate-50 border border-slate-200 rounded-2xl p-8 shadow-sm">
+                  <div className="flex items-center justify-between mb-6 border-b border-slate-200 pb-4">
+                    <div className="flex items-center gap-2">
+                      <Terminal size={20} className="text-slate-400" />
+                      <span className="font-mono text-sm font-semibold text-slate-700">sandbox_status</span>
+                    </div>
+                    <span className="flex items-center gap-1.5 text-xs font-semibold text-emerald-600 bg-emerald-50 border border-emerald-200 px-2 py-1 rounded">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span> Live
+                    </span>
+                  </div>
+                  <div className="font-mono text-sm text-slate-600 space-y-3">
+                    <p><span className="text-blue-500">{">"}</span> Initializing Image Studio container...</p>
+                    <p><span className="text-blue-500">{">"}</span> Loading compression route handlers...</p>
+                    <p className="text-amber-600"><span className="text-amber-500">{">"}</span> WARNING: Intentional fault injected at line 42</p>
+                    <p><span className="text-blue-500">{">"}</span> Mamba RCA agent listening on port 8080</p>
+                    <p className="animate-pulse">_</p>
+                  </div>
                 </div>
-                <p className="text-sm text-[var(--text-muted)] leading-relaxed">The deterministic RCA engine operates directly inside the AST mapping fault boundaries to generate patch pull requests directly over MCP.</p>
               </div>
             </div>
           </div>
         </section>
 
-        <section className="py-24 px-6 bg-white subtle-grid">
+        {/* Core Technology Stack */}
+        <section className="py-24 px-6 border-t border-slate-200 bg-slate-50/50">
           <div className="max-w-6xl mx-auto">
-            <div className="flex justify-between items-end mb-12 border-b border-[var(--border-strong)] pb-4">
-              <h2 className="font-display text-3xl md:text-4xl font-semibold text-slate-800 tracking-tight">System Stack</h2>
-              <span className="text-sm font-medium text-[var(--text-muted)] px-3 py-1 bg-slate-100 rounded-full">Phase 2</span>
+            <div className="text-center mb-16">
+              <h2 className="text-3xl md:text-4xl font-bold text-slate-900 tracking-tight mb-4">Core Technology Stack</h2>
+              <p className="text-slate-500 text-lg max-w-2xl mx-auto">Mamba RCA leverages best-in-class primitives to deliver a coherent and scalable experience.</p>
             </div>
-            
+
             <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
               {[
                 { name: "Next.js", desc: "Core Framework", iconUrl: "https://cdn.simpleicons.org/nextdotjs/000000" },
@@ -114,34 +156,94 @@ export default function LandingPage() {
                 { name: "OpenCode", desc: "RCA Agent Tree", iconUrl: "https://cdn.simpleicons.org/github/181717" },
                 { name: "React", desc: "UI Core", iconUrl: "https://cdn.simpleicons.org/react/61DAFB" }
               ].map((tech, i) => (
-                <div key={i} className="pro-card p-6 flex flex-col items-start hover:border-[var(--accent)] hover:bg-[var(--accent-light)] transition-colors group">
-                  <div className="w-10 h-10 rounded-md bg-slate-50 flex items-center justify-center mb-4 border border-[var(--border-strong)] group-hover:bg-white transition-colors">
-                    {/* Applying a slight opacity so it blends nicely, but keeps original distinct brand colors if loaded via CDN */}
-                    <img src={tech.iconUrl} alt={tech.name} className="w-6 h-6 object-contain" />
+                <div key={i} className="pro-card p-6 flex flex-col items-start hover:border-slate-400 hover:bg-white transition-all duration-300 group cursor-default">
+                  <div className="w-12 h-12 rounded-lg bg-white flex items-center justify-center mb-4 border border-slate-200 shadow-sm group-hover:scale-105 transition-transform duration-300">
+                    <img src={tech.iconUrl} alt={tech.name} className="w-6 h-6 object-contain opacity-80 group-hover:opacity-100 transition-opacity" />
                   </div>
-                  <h4 className="font-medium text-slate-900 mb-1">{tech.name}</h4>
-                  <p className="text-xs text-[var(--text-muted)]">{tech.desc}</p>
+                  <h4 className="font-semibold text-slate-900 mb-1">{tech.name}</h4>
+                  <p className="text-xs text-slate-500 font-medium">{tech.desc}</p>
                 </div>
               ))}
             </div>
           </div>
         </section>
+
+        {/* Architecture Section */}
+        <section id="architecture" className="py-24 px-6 border-t border-slate-200 bg-white subtle-grid">
+          <div className="flex justify-center mb-16">
+            <div className="max-w-4xl text-center bg-white/80 p-6 rounded-2xl backdrop-blur-sm border border-slate-100 shadow-sm">
+               <h2 className="text-3xl md:text-4xl font-bold text-slate-900 tracking-tight mb-4">Pipeline Architecture</h2>
+               <p className="text-slate-600 text-lg mx-auto">A FastAPI-powered pipeline using Gemini for multimodal structuring and embeddings, and MongoDB vector search for RAG-driven OpenCode RCA.</p>
+            </div>
+          </div>
+          
+          <div className="max-w-7xl mx-auto h-[600px] border border-slate-200 rounded-xl bg-white shadow-md relative overflow-hidden">
+             <div className="absolute top-0 left-0 bg-white text-slate-500 px-4 py-2 text-xs font-semibold z-10 border-b border-r border-slate-200 rounded-br-lg font-mono">System Node Graph</div>
+             {/* Render the React Flow Architecture graph */}
+             <ArchitectureFlow />
+          </div>
+        </section>
+
+        {/* Dashboard Explanation */}
+        <section className="py-24 px-6 border-t border-slate-200 bg-slate-50">
+          <div className="max-w-6xl mx-auto">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
+              <div className="md:col-span-1">
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-200 text-slate-700 text-xs font-semibold uppercase tracking-wider mb-6 font-mono">
+                  <Database size={14} /> Observability
+                </div>
+                <h2 className="text-3xl md:text-4xl font-bold text-slate-900 tracking-tight mb-6">Trace the Orchestrator</h2>
+                <p className="text-slate-600 mb-8 text-lg leading-relaxed">
+                  The dashboard is the window into the orchestrator. It monitors the execution paths, triage logic, and artifact generation for every ticket or fault processed.
+                </p>
+                <Link href="/requests" className="pro-button px-6 py-3 text-sm flex items-center w-fit gap-2 bg-blue-600 hover:bg-blue-700 text-white border-transparent">
+                  View Live Dashboard <ArrowRight size={16} />
+                </Link>
+              </div>
+              
+              <div className="md:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-6">
+                <div className="pro-card p-8 bg-white border-slate-200 hover:border-slate-300">
+                  <Activity size={24} className="text-blue-500 mb-5" />
+                  <h3 className="font-bold text-slate-900 mb-2 text-lg">Real-time Tracing</h3>
+                  <p className="text-sm text-slate-600 leading-relaxed">Track execution steps from Gemini multimodal ingestion and embedding generation to RAG routing and OpenCode execution.</p>
+                </div>
+                <div className="pro-card p-8 bg-white border-slate-200 hover:border-slate-300">
+                  <ShieldCheck size={24} className="text-emerald-500 mb-5" />
+                  <h3 className="font-bold text-slate-900 mb-2 text-lg">Vector Deduplication</h3>
+                  <p className="text-sm text-slate-600 leading-relaxed">See exactly when the system halts runaway computation by matching against previous fault events in MongoDB.</p>
+                </div>
+                <div className="pro-card p-8 bg-white border-slate-200 hover:border-slate-300">
+                  <Code size={24} className="text-slate-800 mb-5" />
+                  <h3 className="font-bold text-slate-900 mb-2 text-lg">OpenCode Harness</h3>
+                  <p className="text-sm text-slate-600 leading-relaxed">Review the RCA Engine's reasoning as it maps fault boundaries across the codebase and formulates Pull Requests.</p>
+                </div>
+                <div className="pro-card p-8 bg-white border-slate-200 hover:border-slate-300">
+                  <Box size={24} className="text-indigo-500 mb-5" />
+                  <h3 className="font-bold text-slate-900 mb-2 text-lg">Artifact Storage</h3>
+                  <p className="text-sm text-slate-600 leading-relaxed">Directly access structural logs and visual evidence stored efficiently in Cloudflare R2 object storage.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
       </main>
 
-      <footer className="bg-slate-900 text-slate-300 py-16 px-6 border-t border-slate-800">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-start md:items-center gap-8">
-          <div>
-            <span className="font-display text-2xl font-semibold tracking-tight text-white block mb-1">Mamba<span className="text-[var(--accent)]">_RCA</span></span>
-            <span className="text-sm text-slate-500">Intelligence Orchestration Layer</span>
+      <footer className="bg-white border-t border-slate-200 py-12 px-6">
+        <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
+          <div className="flex items-center gap-2">
+            <div className="w-6 h-6 bg-black rounded flex items-center justify-center">
+              <span className="text-white font-bold text-xs leading-none">M</span>
+            </div>
+            <span className="font-semibold text-slate-900 tracking-tight text-sm">Mamba RCA</span>
           </div>
-          <div className="text-sm flex flex-col items-end gap-2">
-            <span className="bg-slate-800 px-3 py-1 rounded-md mb-2">Terminal 0x1</span>
-            <span className="flex items-center gap-2 text-emerald-400">
-              <span className="relative flex h-2.5 w-2.5">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
-              </span>
-              Status: Operational
+          <div className="text-sm text-slate-500 font-medium">
+            © {new Date().getFullYear()} Mamba Intelligence Orchestration Layer.
+          </div>
+          <div className="flex gap-4 text-sm font-medium text-slate-500">
+            <span className="flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-100 text-emerald-700">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+              Systems Operational
             </span>
           </div>
         </div>
