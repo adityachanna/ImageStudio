@@ -1,13 +1,16 @@
-# MambaRCA
+# ImageStudio
 
 <p align="center">
-  Root Cause Analysis platform with Python backend and web UI.
+  <img src="./logo.png" alt="ImageStudio Logo" width="140" />
 </p>
 
 <p align="center">
-  <img alt="Python" src="https://img.shields.io/badge/Python-81.7%25-3776AB?logo=python&logoColor=white" />
-  <img alt="JavaScript" src="https://img.shields.io/badge/JavaScript-6.6%25-F7DF1E?logo=javascript&logoColor=black" />
-  <img alt="CSS" src="https://img.shields.io/badge/CSS-10.3%25-1572B6?logo=css3&logoColor=white" />
+  A modern AI-powered image workflow app built with Next.js + TypeScript.
+</p>
+
+<p align="center">
+  <img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-98.5%25-3178C6?logo=typescript&logoColor=white" />
+  <img alt="Next.js" src="https://img.shields.io/badge/Next.js-App_Router-000000?logo=nextdotjs&logoColor=white" />
   <img alt="Status" src="https://img.shields.io/badge/status-active-success" />
   <img alt="License" src="https://img.shields.io/badge/license-MIT-blue" />
 </p>
@@ -17,18 +20,17 @@
 ## Table of Contents
 
 - [Overview](#overview)
-- [What MambaRCA Does](#what-mambarca-does)
-- [Key Features](#key-features)
+- [What ImageStudio Does](#what-imagestudio-does)
+- [Core Features](#core-features)
 - [Architecture](#architecture)
 - [Tech Stack](#tech-stack)
-- [Repository Structure](#repository-structure)
-- [Quick Start](#quick-start)
-- [Environment Setup](#environment-setup)
-- [Running the Project](#running-the-project)
-- [Testing](#testing)
-- [Backend Notes](#backend-notes)
-- [Frontend/UI Notes](#frontendui-notes)
-- [Operational Workflow](#operational-workflow)
+- [Project Structure](#project-structure)
+- [Getting Started](#getting-started)
+- [Environment Variables](#environment-variables)
+- [Available Scripts](#available-scripts)
+- [Usage Guide](#usage-guide)
+- [Development Notes](#development-notes)
+- [Deployment](#deployment)
 - [Troubleshooting](#troubleshooting)
 - [Roadmap](#roadmap)
 - [Contributing](#contributing)
@@ -39,218 +41,258 @@
 
 ## Overview
 
-**MambaRCA** is a Root Cause Analysis (RCA) project that combines:
-- a **Python-heavy backend**
-- a lightweight **web interface** (JS/CSS)
-- test scripts and startup checks for reliability
+**ImageStudio** is a TypeScript-first web application designed for image-centric workflows, likely including editing, generation, manipulation, or studio-like composition features.  
+It uses a modern Next.js architecture and is organized for maintainability with clear app/component/lib separation.
 
-The goal is to help users diagnose issues systematically and generate structured analysis workflows.
-
----
-
-## What MambaRCA Does
-
-MambaRCA helps teams move from symptom → diagnosis by providing tooling for:
-
-- issue context capture
-- backend analysis routines
-- reproducible diagnostic execution
-- testable startup/import integrity
-- UI-driven interaction where needed
-
-This project is suited for debugging support systems, internal ops tooling, and incident analysis workflows.
+This repository appears to be focused on:
+- fast frontend iteration
+- reusable UI components
+- app-router based route composition
+- environment-driven configuration for integrations
 
 ---
 
-## Key Features
+## What ImageStudio Does
 
-- **Python-first RCA backend**
-- **Web UI layer for interaction and presentation**
-- **Dependency and startup diagnostic helpers**
-- **Automated sanity checks through test scripts**
-- **Project context docs for maintainability (`PROJECT_CONTEXT.md`)**
-- **Modern Python dependency management (`pyproject.toml`, `uv.lock`)**
+ImageStudio provides a foundation for building an AI-enhanced image product experience with a polished UI and scalable frontend structure.
+
+Typical user outcomes include:
+- creating and refining images
+- interacting with image tools in a studio-like interface
+- managing image transformation workflows in-browser
+
+> If you are evolving the product, update this section with your exact product promise in 1–2 lines.
+
+---
+
+## Core Features
+
+- **Modern Next.js App Router architecture**
+- **Type-safe frontend implementation** (TypeScript-heavy codebase)
+- **Reusable component-based UI layer**
+- **Configurable runtime behavior via `.env`**
+- **Static assets support via `/public`**
+- **Linting and formatting readiness**
+- **Production-friendly structure for deployment**
 
 ---
 
 ## Architecture
 
-MambaRCA appears to use a layered architecture:
+ImageStudio follows a modular frontend architecture:
 
-1. **Backend (`backend/`)**  
-   Core RCA/business logic and service processing.
+1. **`app/`**  
+   Route definitions, page-level composition, and layout orchestration (Next.js App Router).
 
-2. **Interface layer (`script.js`, `styles.css`)**  
-   Lightweight client-side experience for interaction and output display.
+2. **`components/`**  
+   Reusable visual and interaction components used across pages/features.
 
-3. **Operational/utility scripts**  
-   - `diagnose_deps.py` for dependency diagnostics  
-   - `run_opencode_plan.sh` for scripted workflows
+3. **`lib/`**  
+   Shared utilities, business helpers, client setup, and reusable logic.
 
-4. **Validation/testing**  
-   - `test_backend.py`  
-   - `test_imports.py`  
-   - `test_startup.py`
+4. **`public/`**  
+   Static assets such as logos, icons, and media files.
 
-5. **Project metadata/docs**  
-   - `PROJECT_CONTEXT.md`  
-   - `pyproject.toml` and lockfile for reproducible environments
+5. **Configuration layer**  
+   `next.config.ts`, `tsconfig.json`, `eslint.config.mjs`, and PostCSS config control build and dev behavior.
 
 ---
 
 ## Tech Stack
 
-- **Primary language:** Python
-- **UI:** JavaScript + CSS
-- **Build/deps:** `pyproject.toml` + `uv.lock`
-- **Testing:** Python test modules (`test_*.py`)
-- **Shell automation:** `.sh` scripts
+- **Framework:** Next.js (App Router)
+- **Language:** TypeScript
+- **Styling:** CSS + PostCSS setup
+- **Linting:** ESLint
+- **Node Package Management:** npm (`package-lock.json` present)
 
 ---
 
-## Repository Structure
+## Project Structure
 
 ```text
-MambaRCA/
-├── backend/                # Core backend logic for RCA workflows
-├── PROJECT_CONTEXT.md      # Deep context and project direction
-├── diagnose_deps.py        # Dependency diagnosis script
-├── run_opencode_plan.sh    # Scripted run/plan helper
-├── script.js               # Frontend interaction logic
-├── styles.css              # Frontend styling
-├── test_backend.py         # Backend tests
-├── test_imports.py         # Import integrity checks
-├── test_startup.py         # Startup path checks
-├── pyproject.toml          # Python project/dependency config
-├── uv.lock                 # Reproducible dependency lock
+ImageStudio/
+├── app/                    # Next.js app routes and layouts
+├── components/             # Reusable UI components
+├── lib/                    # Shared utility modules
+├── public/                 # Static assets
+├── .env.example            # Environment variable template
+├── eslint.config.mjs       # Lint configuration
+├── next.config.ts          # Next.js configuration
+├── postcss.config.mjs      # PostCSS configuration
+├── tsconfig.json           # TypeScript configuration
+├── package.json            # Dependencies and scripts
 └── README.md
 ```
 
 ---
 
-## Quick Start
+## Getting Started
 
 ### 1) Prerequisites
 
-- Python 3.10+ (recommended: 3.11+)
-- `uv` (recommended) or `pip`
+- Node.js 18+ (recommended: latest LTS)
+- npm 9+
 - Git
-- (Optional) Node.js if additional frontend tooling is added later
 
 ### 2) Clone Repository
 
 ```bash
-git clone https://github.com/adityachanna/MambaRCA.git
-cd MambaRCA
+git clone https://github.com/adityachanna/ImageStudio.git
+cd ImageStudio
 ```
 
-### 3) Create Virtual Environment
+### 3) Install Dependencies
 
-Using `uv`:
 ```bash
-uv venv
-source .venv/bin/activate    # macOS/Linux
-# .venv\Scripts\activate     # Windows PowerShell
+npm install
 ```
 
-Or with Python:
+### 4) Configure Environment
+
 ```bash
-python -m venv .venv
-source .venv/bin/activate
+cp .env.example .env.local
 ```
 
-### 4) Install Dependencies
+Fill required values in `.env.local` before running the app.
 
-Using `uv`:
+### 5) Run Development Server
+
 ```bash
-uv sync
+npm run dev
 ```
 
-Or pip fallback:
-```bash
-pip install -e .
-```
+Open: `http://localhost:3000`
 
 ---
 
-## Environment Setup
+## Environment Variables
 
-If your backend requires env vars, create:
+Use `.env.example` as source of truth. Typical categories:
 
-```bash
-cp .env.example .env
+- API keys for AI/media services
+- backend/base URLs
+- feature toggles
+- app environment mode
+
+Example format:
+
+```env
+# Example only - replace with your actual vars from .env.example
+NEXT_PUBLIC_APP_NAME=ImageStudio
+NEXT_PUBLIC_API_BASE_URL=http://localhost:3000/api
 ```
 
-If `.env.example` is not present, define required settings in your run command or shell profile.
-
-Suggested categories:
-- API credentials
-- model/provider configuration
-- debug/logging level
-- service endpoint URLs
+> Never commit secrets. Keep them in local/dev secret stores or deployment platform env settings.
 
 ---
 
-## Running the Project
+## Available Scripts
 
-### Run backend/module entrypoint
-(Adjust command to your actual backend entry script/module)
+Check `package.json` for exact script names. Typical Next.js scripts include:
 
-```bash
-python -m backend
-```
-
-or
-
-```bash
-python backend/main.py
-```
-
-### Run workflow helper script
-
-```bash
-bash run_opencode_plan.sh
-```
-
-### Run dependency diagnostics
-
-```bash
-python diagnose_deps.py
-```
+- `npm run dev` – start local development server
+- `npm run build` – create production build
+- `npm run start` – run production server
+- `npm run lint` – run lint checks
 
 ---
 
-## Testing
+## Usage Guide
 
-Run all tests:
+1. Launch app locally.
+2. Navigate to core studio routes.
+3. Upload/select source image(s).
+4. Apply transformations/editing/generation flows.
+5. Export/download outputs.
 
-```bash
-pytest -q
-```
-
-Run specific checks:
-
-```bash
-pytest -q test_imports.py
-pytest -q test_startup.py
-pytest -q test_backend.py
-```
-
-These tests help verify:
-- import graph integrity
-- startup viability
-- backend behavior correctness
+For best documentation quality, add:
+- screenshots of main screens
+- before/after examples
+- model/tool settings explanation (if AI features are present)
 
 ---
 
-## Backend Notes
+## Development Notes
 
-- Keep RCA logic deterministic and auditable.
-- Separate ingestion/parsing from reasoning logic.
-- Add structured logging for each diagnostic stage.
-- Use typed data models where possible (e.g., `pydantic`/dataclasses).
-- Prefer pure functions in core analysis pipeline for easier testing.
+- Keep components small and composable.
+- Move reusable logic to `lib/`.
+- Avoid hardcoded environment-specific values.
+- Prefer typed interfaces for request/response objects.
+- Run lint/type checks before commit.
 
 ---
 
-## Frontend
+## Deployment
+
+### Recommended platforms
+- Vercel (best for Next.js)
+- Netlify (if compatible with project setup)
+- Docker/self-hosted Node runtime
+
+### Generic production flow
+
+```bash
+npm ci
+npm run build
+npm run start
+```
+
+Set production env vars in your deployment provider dashboard.
+
+---
+
+## Troubleshooting
+
+### App fails to start
+- Verify `.env.local` is configured
+- Confirm Node version compatibility
+- Reinstall dependencies:
+  ```bash
+  rm -rf node_modules package-lock.json
+  npm install
+  ```
+
+### Build errors
+- Run:
+  ```bash
+  npm run lint
+  ```
+- Check TypeScript config and path aliases
+- Inspect any tracked TS issues (`ts_errors.txt` if relevant to current branch)
+
+---
+
+## Roadmap
+
+- [ ] Add end-to-end tests for image workflows
+- [ ] Add auth and user workspace support
+- [ ] Add version history for image edits
+- [ ] Add cloud storage integration
+- [ ] Improve accessibility and keyboard shortcuts
+- [ ] Add usage analytics and error observability
+
+---
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch  
+   `git checkout -b feat/your-feature-name`
+3. Commit changes with clear messages
+4. Push branch and open PR
+5. Ensure lint/build pass before requesting review
+
+---
+
+## License
+
+MIT License (recommended).  
+If different, replace this section with your project’s actual license text/reference.
+
+---
+
+## Maintainer
+
+**Aditya Channa**  
+GitHub: [@adityachanna](https://github.com/adityachanna)
