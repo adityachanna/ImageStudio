@@ -1,50 +1,256 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# MambaRCA
 
-## Getting Started
+<p align="center">
+  Root Cause Analysis platform with Python backend and web UI.
+</p>
 
-First, run the development server:
+<p align="center">
+  <img alt="Python" src="https://img.shields.io/badge/Python-81.7%25-3776AB?logo=python&logoColor=white" />
+  <img alt="JavaScript" src="https://img.shields.io/badge/JavaScript-6.6%25-F7DF1E?logo=javascript&logoColor=black" />
+  <img alt="CSS" src="https://img.shields.io/badge/CSS-10.3%25-1572B6?logo=css3&logoColor=white" />
+  <img alt="Status" src="https://img.shields.io/badge/status-active-success" />
+  <img alt="License" src="https://img.shields.io/badge/license-MIT-blue" />
+</p>
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+---
+
+## Table of Contents
+
+- [Overview](#overview)
+- [What MambaRCA Does](#what-mambarca-does)
+- [Key Features](#key-features)
+- [Architecture](#architecture)
+- [Tech Stack](#tech-stack)
+- [Repository Structure](#repository-structure)
+- [Quick Start](#quick-start)
+- [Environment Setup](#environment-setup)
+- [Running the Project](#running-the-project)
+- [Testing](#testing)
+- [Backend Notes](#backend-notes)
+- [Frontend/UI Notes](#frontendui-notes)
+- [Operational Workflow](#operational-workflow)
+- [Troubleshooting](#troubleshooting)
+- [Roadmap](#roadmap)
+- [Contributing](#contributing)
+- [License](#license)
+- [Maintainer](#maintainer)
+
+---
+
+## Overview
+
+**MambaRCA** is a Root Cause Analysis (RCA) project that combines:
+- a **Python-heavy backend**
+- a lightweight **web interface** (JS/CSS)
+- test scripts and startup checks for reliability
+
+The goal is to help users diagnose issues systematically and generate structured analysis workflows.
+
+---
+
+## What MambaRCA Does
+
+MambaRCA helps teams move from symptom → diagnosis by providing tooling for:
+
+- issue context capture
+- backend analysis routines
+- reproducible diagnostic execution
+- testable startup/import integrity
+- UI-driven interaction where needed
+
+This project is suited for debugging support systems, internal ops tooling, and incident analysis workflows.
+
+---
+
+## Key Features
+
+- **Python-first RCA backend**
+- **Web UI layer for interaction and presentation**
+- **Dependency and startup diagnostic helpers**
+- **Automated sanity checks through test scripts**
+- **Project context docs for maintainability (`PROJECT_CONTEXT.md`)**
+- **Modern Python dependency management (`pyproject.toml`, `uv.lock`)**
+
+---
+
+## Architecture
+
+MambaRCA appears to use a layered architecture:
+
+1. **Backend (`backend/`)**  
+   Core RCA/business logic and service processing.
+
+2. **Interface layer (`script.js`, `styles.css`)**  
+   Lightweight client-side experience for interaction and output display.
+
+3. **Operational/utility scripts**  
+   - `diagnose_deps.py` for dependency diagnostics  
+   - `run_opencode_plan.sh` for scripted workflows
+
+4. **Validation/testing**  
+   - `test_backend.py`  
+   - `test_imports.py`  
+   - `test_startup.py`
+
+5. **Project metadata/docs**  
+   - `PROJECT_CONTEXT.md`  
+   - `pyproject.toml` and lockfile for reproducible environments
+
+---
+
+## Tech Stack
+
+- **Primary language:** Python
+- **UI:** JavaScript + CSS
+- **Build/deps:** `pyproject.toml` + `uv.lock`
+- **Testing:** Python test modules (`test_*.py`)
+- **Shell automation:** `.sh` scripts
+
+---
+
+## Repository Structure
+
+```text
+MambaRCA/
+├── backend/                # Core backend logic for RCA workflows
+├── PROJECT_CONTEXT.md      # Deep context and project direction
+├── diagnose_deps.py        # Dependency diagnosis script
+├── run_opencode_plan.sh    # Scripted run/plan helper
+├── script.js               # Frontend interaction logic
+├── styles.css              # Frontend styling
+├── test_backend.py         # Backend tests
+├── test_imports.py         # Import integrity checks
+├── test_startup.py         # Startup path checks
+├── pyproject.toml          # Python project/dependency config
+├── uv.lock                 # Reproducible dependency lock
+└── README.md
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+---
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Quick Start
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### 1) Prerequisites
 
-## Learn More
+- Python 3.10+ (recommended: 3.11+)
+- `uv` (recommended) or `pip`
+- Git
+- (Optional) Node.js if additional frontend tooling is added later
 
-To learn more about Next.js, take a look at the following resources:
+### 2) Clone Repository
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```bash
+git clone https://github.com/adityachanna/MambaRCA.git
+cd MambaRCA
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### 3) Create Virtual Environment
 
-## Deploy on Vercel
+Using `uv`:
+```bash
+uv venv
+source .venv/bin/activate    # macOS/Linux
+# .venv\Scripts\activate     # Windows PowerShell
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Or with Python:
+```bash
+python -m venv .venv
+source .venv/bin/activate
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### 4) Install Dependencies
 
-## Deployment env checklist
+Using `uv`:
+```bash
+uv sync
+```
 
-1. Copy `.env.example` to your deployment provider's environment variables.
-2. Set `JDI_BACKEND_URL` to your deployed FastAPI base URL (server-side usage).
-3. Set `NEXT_PUBLIC_JDI_BACKEND_URL` only if browser-side components must call that backend directly.
-4. Set Mongo URI using `MONGODB_URI` (preferred) or `uri` (legacy-compatible).
-5. Set R2/S3 variables for endpoint, key, secret, and bucket.
+Or pip fallback:
+```bash
+pip install -e .
+```
 
-### Build behavior
+---
 
-Production build is configured to continue even when TypeScript errors exist by setting `typescript.ignoreBuildErrors = true` in `next.config.ts`.
+## Environment Setup
 
-Use this only as a temporary bypass while you intentionally keep known type issues.
+If your backend requires env vars, create:
+
+```bash
+cp .env.example .env
+```
+
+If `.env.example` is not present, define required settings in your run command or shell profile.
+
+Suggested categories:
+- API credentials
+- model/provider configuration
+- debug/logging level
+- service endpoint URLs
+
+---
+
+## Running the Project
+
+### Run backend/module entrypoint
+(Adjust command to your actual backend entry script/module)
+
+```bash
+python -m backend
+```
+
+or
+
+```bash
+python backend/main.py
+```
+
+### Run workflow helper script
+
+```bash
+bash run_opencode_plan.sh
+```
+
+### Run dependency diagnostics
+
+```bash
+python diagnose_deps.py
+```
+
+---
+
+## Testing
+
+Run all tests:
+
+```bash
+pytest -q
+```
+
+Run specific checks:
+
+```bash
+pytest -q test_imports.py
+pytest -q test_startup.py
+pytest -q test_backend.py
+```
+
+These tests help verify:
+- import graph integrity
+- startup viability
+- backend behavior correctness
+
+---
+
+## Backend Notes
+
+- Keep RCA logic deterministic and auditable.
+- Separate ingestion/parsing from reasoning logic.
+- Add structured logging for each diagnostic stage.
+- Use typed data models where possible (e.g., `pydantic`/dataclasses).
+- Prefer pure functions in core analysis pipeline for easier testing.
+
+---
+
+## Frontend
