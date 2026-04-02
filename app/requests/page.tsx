@@ -1,9 +1,28 @@
 'use client';
 
-import { Suspense, useEffect, useMemo, useState } from 'react';
+import {
+  type ReactNode,
+  Suspense,
+  startTransition,
+  useEffect,
+  useEffectEvent,
+  useMemo,
+  useState,
+} from 'react';
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
-import { CheckCircle2, Clock3, Database, ExternalLink, Search, XCircle, LayoutDashboard, FileText, Activity } from 'lucide-react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import {
+  Activity,
+  CheckCircle2,
+  Clock3,
+  ExternalLink,
+  FileText,
+  GitBranch,
+  LayoutDashboard,
+  RefreshCw,
+  Search,
+} from 'lucide-react';
+import { motion } from 'framer-motion';
 
 type DateLike = string | { $date?: string } | null | undefined;
 
@@ -12,6 +31,14 @@ type StatusEntry = {
   step?: string;
   message?: string;
   at?: DateLike;
+};
+
+type RoutingDecision = {
+  flow?: string;
+  rationale?: string;
+  matched_request_id?: string | null;
+  matched_score?: number | null;
+  confidence?: string;
 };
 
 type Ticket = {
@@ -24,22 +51,35 @@ type Ticket = {
   primaryChoice?: string;
   documentType?: string;
   pipelineVersion?: string;
+  userEmail?: string;
   createdAt?: DateLike;
   updatedAt?: DateLike;
+  receivedImageCount?: number;
   intake?: {
-    issueFingerprint?: string;
-    issueDescriptionHash?: string;
     submittedAt?: DateLike;
     receivedImageCount?: number;
+  };
+  storage?: {
+    route?: string;
+    problemsPrefix?: string;
+    imageCount?: number;
+  };
+  analysis?: {
+    model?: string;
+    imageCount?: number;
   };
   triage?: {
     summary?: string;
     structuredProblem?: string;
     errorType?: string;
+    errorCode?: string;
     severity?: string;
     systemContext?: string;
     pageContext?: string;
+    impactScope?: string;
     impactAssessment?: string;
+    preliminaryAssessment?: string;
+    imageEvidence?: string[];
     dataGaps?: string[];
   };
   workflow?: {
@@ -53,24 +93,39 @@ type Ticket = {
       summary?: string;
     };
     rag?: {
-      decision?: {
-        flow?: string;
-        rationale?: string;
-        matched_request_id?: string | null;
-        matched_score?: number | null;
-      };
+      status?: string;
+      decision?: RoutingDecision;
     };
   };
+  flowDecision?: RoutingDecision;
   rca?: {
     eligible?: boolean;
     status?: string;
+    summary?: string;
     result?: {
       source?: string;
+      report?: string;
+      repoDir?: string;
       matchedRequestId?: string;
       score?: number;
     };
   };
+  github?: {
+    status?: string;
+    mode?: string;
+    repository?: string;
+    issueNumber?: number;
+    issueUrl?: string;
+    commentUrl?: string;
+    issueTitle?: string;
+  };
+  inputArtifact?: unknown;
+  outputArtifact?: unknown;
+  logArtifacts?: unknown[];
+  imageObjects?: unknown[];
+  imagePayloadUrls?: string[];
   artifactUrls?: {
+    input?: string[];
     output?: string[];
     logs?: string[];
   };
@@ -92,6 +147,19 @@ type RecentRecord = {
 
 type RecentPayload = {
   records?: RecentRecord[];
+};
+
+type TimelineEntry = {
+  id: string;
+  title: string;
+  status: string;
+  message: string;
+  at: string;
+};
+
+type GithubLink = {
+  url: string;
+  label: string;
 };
 
 const stepLabels: Record<string, string> = {
@@ -116,6 +184,15 @@ function readDate(value: DateLike): string {
   return date.toLocaleString();
 }
 
+function humanize(value?: string | null): string {
+  if (!value) return 'N/A';
+  return value
+    .replace(/[_-]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
 function parseTicket(payload: unknown): Ticket | null {
   if (!payload || typeof payload !== 'object') return null;
   const root = payload as StatusApiResponse;
@@ -123,7 +200,97 @@ function parseTicket(payload: unknown): Ticket | null {
   return null;
 }
 
+function hasArtifact(value: unknown): boolean {
+  if (!value) return false;
+  if (Array.isArray(value)) return value.length > 0;
+  if (typeof value === 'object') return Object.keys(value).length > 0;
+  return true;
+}
+
+function isTerminalTicket(ticket: Ticket | null): boolean {
+  if (!ticket) return false;
+
+  const normalizedStatus = (ticket.status ?? '').toLowerCase();
+  const normalizedStep = (ticket.currentStep ?? '').toLowerCase();
+  const rcaStatus = (ticket.workflow?.rca?.status ?? ticket.rca?.status ?? '').toLowerCase();
+  const dedupStatus = (ticket.workflow?.dedup?.status ?? '').toLowerCase();
+
+  if (['completed', 'failed', 'error', 'cancelled'].includes(normalizedStatus)) return true;
+  if (['rca_completed', 'dedup_matched'].includes(normalizedStep)) return true;
+  if (['completed', 'skipped_duplicate'].includes(rcaStatus)) return true;
+  if (dedupStatus === 'matched') return true;
+
+  return false;
+}
+
+function collectGithubUrls(value: unknown, urls = new Set<string>()): Set<string> {
+  if (!value) return urls;
+
+  if (typeof value === 'string') {
+    const matches = value.match(/https?:\/\/github\.com\/[^\s"'<>]+/gi) ?? [];
+    for (const match of matches) {
+      urls.add(match.replace(/[),.;]+$/, ''));
+    }
+    return urls;
+  }
+
+  if (Array.isArray(value)) {
+    for (const item of value) collectGithubUrls(item, urls);
+    return urls;
+  }
+
+  if (typeof value === 'object') {
+    for (const nestedValue of Object.values(value as Record<string, unknown>)) {
+      collectGithubUrls(nestedValue, urls);
+    }
+  }
+
+  return urls;
+}
+
+function classifyGithubLink(url: string): string {
+  if (/#issuecomment-\d+/i.test(url) || /\/pull\/\d+#discussion_r\d+/i.test(url)) {
+    return 'GitHub Comment';
+  }
+  if (/\/issues\/\d+/i.test(url)) return 'GitHub Issue';
+  if (/\/pull\/\d+/i.test(url)) return 'GitHub Pull Request';
+  return 'GitHub Link';
+}
+
+function getStatusTone(status?: string | null): 'emerald' | 'amber' | 'rose' | 'slate' {
+  const normalized = (status ?? '').toLowerCase();
+  if (['completed', 'success'].includes(normalized)) return 'emerald';
+  if (['failed', 'error'].includes(normalized)) return 'rose';
+  if (['processing', 'running', 'queued', 'pending'].includes(normalized)) return 'amber';
+  return 'slate';
+}
+
+const revealTransition = {
+  duration: 0.45,
+  ease: [0.22, 1, 0.36, 1] as const,
+};
+
+async function fetchTicketPayload(requestId: string): Promise<Ticket> {
+  const res = await fetch(`/api/request-status/${encodeURIComponent(requestId)}`, {
+    cache: 'no-store',
+  });
+
+  if (!res.ok) {
+    throw new Error('Could not load the selected request from the status API.');
+  }
+
+  const data = (await res.json()) as unknown;
+  const parsed = parseTicket(data);
+
+  if (!parsed) {
+    throw new Error('Ticket payload shape is unexpected.');
+  }
+
+  return parsed;
+}
+
 function RequestsDashboardContent() {
+  const router = useRouter();
   const searchParams = useSearchParams();
 
   const [inputId, setInputId] = useState('');
@@ -131,6 +298,8 @@ function RequestsDashboardContent() {
   const [ticket, setTicket] = useState<Ticket | null>(null);
   const [recent, setRecent] = useState<RecentRecord[]>([]);
   const [loading, setLoading] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [lastRefreshedAt, setLastRefreshedAt] = useState<string | null>(null);
   const [error, setError] = useState('');
   const [recentError, setRecentError] = useState('');
 
@@ -151,7 +320,7 @@ function RequestsDashboardContent() {
         if (!res.ok) {
           if (!mounted) return;
           setRecent([]);
-          setRecentError('Could not load recent requests from FastAPI endpoint.');
+          setRecentError('Could not load recent requests from the backend.');
           return;
         }
 
@@ -167,64 +336,88 @@ function RequestsDashboardContent() {
       }
     }
 
-    loadRecent();
+    void loadRecent();
 
     return () => {
       mounted = false;
     };
   }, []);
 
-  useEffect(() => {
-    if (!activeRequestId) return;
+  async function requestAndApplyTicket(requestId: string, background = false) {
+    if (!requestId) return;
 
-    let mounted = true;
-
-    async function loadTicket() {
+    if (background) {
+      setIsRefreshing(true);
+    } else {
       setLoading(true);
-      setError('');
-
-      try {
-        const res = await fetch(`/api/request-status/${encodeURIComponent(activeRequestId)}`, {
-          cache: 'no-store',
-        });
-
-        if (!res.ok) {
-          if (!mounted) return;
-          setTicket(null);
-          setError('Could not load ticket from Mongo-backed API.');
-          return;
-        }
-
-        const data = (await res.json()) as unknown;
-        const parsed = parseTicket(data);
-
-        if (!mounted) return;
-        if (!parsed) {
-          setTicket(null);
-          setError('Ticket payload shape is unexpected.');
-          return;
-        }
-
-        setTicket(parsed);
-      } catch {
-        if (!mounted) return;
-        setTicket(null);
-        setError('Network error while loading ticket.');
-      } finally {
-        if (mounted) setLoading(false);
-      }
+      setTicket(null);
     }
 
-    loadTicket();
-    return () => {
-      mounted = false;
-    };
+    setError('');
+
+    try {
+      const parsed = await fetchTicketPayload(requestId);
+
+      startTransition(() => {
+        setTicket(parsed);
+        setLastRefreshedAt(new Date().toISOString());
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Network error while loading the selected request.';
+      startTransition(() => {
+        setTicket(null);
+        setError(message);
+      });
+    } finally {
+      if (background) {
+        setIsRefreshing(false);
+      } else {
+        setLoading(false);
+      }
+    }
+  }
+
+  const loadTicket = useEffectEvent(async (requestId: string, background = false) => {
+    await requestAndApplyTicket(requestId, background);
+  });
+
+  useEffect(() => {
+    if (!activeRequestId) return;
+    void loadTicket(activeRequestId);
   }, [activeRequestId]);
+
+  const shouldPoll = useMemo(() => {
+    if (!activeRequestId) return false;
+    if (!ticket) return false;
+    return !isTerminalTicket(ticket);
+  }, [activeRequestId, ticket]);
+
+  useEffect(() => {
+    if (!activeRequestId || !shouldPoll) return;
+
+    const intervalId = window.setInterval(() => {
+      void loadTicket(activeRequestId, true);
+    }, 10_000);
+
+    return () => {
+      window.clearInterval(intervalId);
+    };
+  }, [activeRequestId, shouldPoll]);
+
+  const routingDecision = useMemo(
+    () => ticket?.flowDecision ?? ticket?.workflow?.rag?.decision ?? null,
+    [ticket]
+  );
 
   const rcaInvoked = useMemo(() => {
     if (!ticket) return false;
     const workflowRcaStatus = ticket.workflow?.rca?.status?.toLowerCase() ?? '';
-    return workflowRcaStatus === 'completed' || ticket.currentStep === 'rca_completed';
+    const topLevelRcaStatus = ticket.rca?.status?.toLowerCase() ?? '';
+    return (
+      workflowRcaStatus === 'completed' ||
+      topLevelRcaStatus === 'completed' ||
+      ticket.currentStep === 'rca_completed'
+    );
   }, [ticket]);
 
   const rcaSkippedDuplicate = useMemo(() => {
@@ -234,323 +427,618 @@ function RequestsDashboardContent() {
     return workflowRcaStatus === 'skipped_duplicate' || dedupStatus === 'matched' || ticket.currentStep === 'dedup_matched';
   }, [ticket]);
 
-  const timeline = useMemo(() => {
+  const timeline = useMemo<TimelineEntry[]>(() => {
     return (ticket?.statusHistory ?? []).map((step, idx) => ({
       id: `${step.step ?? 'step'}-${idx}`,
-      title: stepLabels[step.step ?? ''] ?? step.step ?? 'Step',
-      status: step.status ?? 'processing',
+      title: stepLabels[step.step ?? ''] ?? humanize(step.step) ?? 'Step',
+      status: humanize(step.status) ?? 'Processing',
       message: step.message ?? '',
       at: readDate(step.at),
-      done: (step.status ?? '').toLowerCase() === 'completed',
     }));
   }, [ticket]);
 
+  const githubLinks = useMemo<GithubLink[]>(() => {
+    if (!ticket) return [];
+
+    return Array.from(collectGithubUrls(ticket))
+      .map((url) => ({ url, label: classifyGithubLink(url) }))
+      .sort((left, right) => left.label.localeCompare(right.label));
+  }, [ticket]);
+
+  const summaryHeadline = ticket?.triage?.summary ?? ticket?.statusMessage ?? 'Selected request';
+  const currentStepLabel = stepLabels[ticket?.currentStep ?? ''] ?? humanize(ticket?.currentStep) ?? 'N/A';
+  const requestStatusLabel = humanize(ticket?.status) ?? 'N/A';
+  const refreshLabel = lastRefreshedAt ? readDate(lastRefreshedAt) : 'Waiting for first response';
+  const imageCount =
+    ticket?.storage?.imageCount ??
+    ticket?.analysis?.imageCount ??
+    ticket?.intake?.receivedImageCount ??
+    ticket?.receivedImageCount ??
+    ticket?.imageObjects?.length ??
+    ticket?.imagePayloadUrls?.length ??
+    0;
+
+  const inputReady = hasArtifact(ticket?.inputArtifact) || (ticket?.artifactUrls?.input?.length ?? 0) > 0;
+  const outputReady = hasArtifact(ticket?.outputArtifact) || (ticket?.artifactUrls?.output?.length ?? 0) > 0;
+  const logsReady = (ticket?.logArtifacts?.length ?? 0) > 0 || (ticket?.artifactUrls?.logs?.length ?? 0) > 0;
+
+  function returnToDashboard() {
+    setInputId('');
+    setActiveRequestId('');
+    setTicket(null);
+    setError('');
+    setLastRefreshedAt(null);
+    router.replace('/requests', { scroll: false });
+  }
+
   return (
-    <div className="font-sans bg-slate-50 text-slate-900 min-h-screen">
-      <nav className="fixed top-0 w-full z-50 bg-white border-b border-slate-200">
-        <div className="flex justify-between items-center max-w-7xl mx-auto px-6 h-16">
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(15,23,42,0.06),_transparent_28%),radial-gradient(circle_at_top_right,_rgba(148,163,184,0.18),_transparent_22%),linear-gradient(180deg,_#f8fafc_0%,_#f1f5f9_100%)] text-slate-900">
+      <nav className="fixed top-0 z-50 w-full border-b border-slate-200 bg-white/90 backdrop-blur-md">
+        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-6">
           <div className="flex items-center gap-4">
-            <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-              <div className="w-8 h-8 bg-black flex items-center justify-center rounded">
-                <span className="text-white font-bold text-lg leading-none">M</span>
+            <Link href="/" className="flex items-center gap-2 transition-opacity hover:opacity-80">
+              <div className="flex h-8 w-8 items-center justify-center rounded bg-black">
+                <span className="text-lg font-bold leading-none text-white">M</span>
               </div>
-              <span className="font-semibold text-xl tracking-tight text-slate-900 hidden sm:inline">Mamba <span className="font-light text-slate-500">RCA</span></span>
+              <span className="hidden text-xl font-semibold tracking-tight text-slate-900 sm:inline">
+                Mamba <span className="font-light text-slate-500">RCA</span>
+              </span>
             </Link>
-            <div className="hidden md:block w-px h-6 bg-slate-200"></div>
-            <div className="hidden md:flex items-center gap-2 text-sm font-semibold text-slate-700 bg-slate-100 border border-slate-200 px-3 py-1 rounded">
-              <LayoutDashboard size={14} /> Orchestrator Dashboard
+            <div className="hidden h-6 w-px bg-slate-200 md:block" />
+            <div className="hidden items-center gap-2 rounded-full border border-slate-200 bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700 md:flex">
+              <LayoutDashboard size={14} />
+              Dashboard
             </div>
           </div>
-          <div className="flex items-center gap-4">
-            <Link href="/" className="pro-button-secondary px-4 py-2 text-xs hidden sm:flex items-center">Home</Link>
-            <Link href="/sandbox" className="pro-button px-4 py-2 text-xs hidden sm:flex items-center">Sandbox</Link>
+          <div className="flex items-center gap-3">
+            <Link href="/" className="pro-button-secondary hidden px-4 py-2 text-xs sm:flex">
+              Home
+            </Link>
+            <Link href="/sandbox" className="pro-button hidden px-4 py-2 text-xs sm:flex">
+              Sandbox
+            </Link>
           </div>
         </div>
       </nav>
 
-      <main className="pt-24 pb-20 px-6 max-w-5xl mx-auto">
-        <header className="mb-8">
-          <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-slate-900 mb-2">Observability Dashboard</h1>
-          <p className="text-slate-500 text-lg">Monitor the Mamba RCA pipeline and sandbox error traces.</p>
-        </header>
+      <main className="mx-auto flex max-w-7xl flex-col gap-6 px-6 pb-20 pt-24">
+        <motion.header
+          initial={{ opacity: 0, y: 18 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={revealTransition}
+          className="relative overflow-hidden rounded-[32px] border border-slate-200/80 bg-[linear-gradient(135deg,rgba(255,255,255,0.96),rgba(255,255,255,0.78)),radial-gradient(circle_at_top_right,rgba(15,23,42,0.08),transparent_34%)] px-8 py-8 shadow-[0_20px_60px_rgba(15,23,42,0.06)]"
+        >
+          <div className="pointer-events-none absolute inset-y-0 right-0 w-1/3 bg-[radial-gradient(circle_at_center,rgba(15,23,42,0.06),transparent_68%)]" />
+          <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+            <div className="max-w-3xl">
+              <p className="mb-2 text-xs font-semibold uppercase tracking-[0.24em] text-slate-400">
+                Operator Console
+              </p>
+              <h1 className="text-3xl font-semibold tracking-tight text-slate-900 md:text-4xl">
+                Request Observability
+              </h1>
+              <p className="mt-3 text-sm leading-6 text-slate-600 md:text-base">
+                Inspect the active request, monitor pipeline progression, and verify whether outputs,
+                logs, and RCA handoff artifacts have been captured.
+              </p>
+            </div>
 
-        <section className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 mb-6">
-          <div className="flex flex-col md:flex-row gap-4 justify-between items-start md:items-center mb-6">
-            <div className="flex items-center gap-3">
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-100 border border-slate-200 text-slate-700 text-xs font-semibold">
-                <Activity size={12} /> Live Trace Active
-              </span>
+            {activeRequestId ? (
+              <div className="flex flex-wrap items-center gap-2 lg:max-w-sm lg:justify-end">
+                <StatusPill tone="slate">Request loaded</StatusPill>
+                <StatusPill tone={shouldPoll ? 'amber' : 'emerald'}>
+                  {shouldPoll ? 'Polling every 10s' : 'Stable'}
+                </StatusPill>
+                <StatusPill tone="slate">{lastRefreshedAt ? `Updated ${refreshLabel}` : 'Waiting for refresh'}</StatusPill>
+              </div>
+            ) : null}
+          </div>
+        </motion.header>
+
+        <MotionSection
+          delay={0.05}
+          className="rounded-[28px] border border-slate-200/80 bg-white/90 p-6 shadow-[0_18px_50px_rgba(15,23,42,0.05)] backdrop-blur-sm"
+        >
+          <div className="mb-5 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex flex-wrap items-center gap-2">
+              <StatusPill tone="slate">
+                <Activity size={12} />
+                Request Lookup
+              </StatusPill>
+              {activeRequestId ? (
+                <StatusPill tone={shouldPoll ? 'amber' : 'emerald'}>
+                  <RefreshCw size={12} className={isRefreshing ? 'animate-spin' : ''} />
+                  {shouldPoll ? 'Polling every 10s' : 'Polling stopped'}
+                </StatusPill>
+              ) : null}
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2">
               {!!activeRequestId && (
-                <button 
-                  onClick={() => { setInputId(''); setActiveRequestId(''); setTicket(null); setError(''); }} 
-                  className="pro-button-secondary px-3 py-1.5 text-xs"
+                <button
+                  onClick={() => void requestAndApplyTicket(activeRequestId, true)}
+                  className="pro-button-secondary gap-2 px-3 py-2 text-xs"
+                  disabled={loading || isRefreshing}
                 >
-                  Clear Selection
+                  <RefreshCw size={14} className={isRefreshing ? 'animate-spin' : ''} />
+                  Refresh
+                </button>
+              )}
+              {!!activeRequestId && (
+                <button
+                  onClick={returnToDashboard}
+                  className="pro-button-secondary px-3 py-2 text-xs"
+                >
+                  Back to Dashboard
                 </button>
               )}
             </div>
           </div>
 
-          <div className="flex items-center gap-3 bg-slate-50 p-2 rounded-lg border border-slate-200">
+          <div className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-2">
             <div className="pl-3 text-slate-400">
               <Search size={20} />
             </div>
             <input
               value={inputId}
-              onChange={(e) => setInputId(e.target.value)}
-              placeholder="Enter Request ID (e.g. req-12345)"
-              className="w-full bg-transparent border-none outline-none text-slate-900 placeholder:text-slate-400 font-mono text-sm py-2"
-              onKeyDown={(e) => { if (e.key === 'Enter') setActiveRequestId(inputId.trim()); }}
+              onChange={(event) => setInputId(event.target.value)}
+              placeholder="Enter a request ID"
+              className="w-full border-none bg-transparent py-2 font-mono text-sm text-slate-900 outline-none placeholder:text-slate-400"
+              onKeyDown={(event) => {
+                if (event.key === 'Enter') {
+                  setActiveRequestId(inputId.trim());
+                }
+              }}
             />
-            <button 
-              onClick={() => setActiveRequestId(inputId.trim())} 
-              className="pro-button px-6 py-2 text-sm"
-            >
-              Trace Request
+            <button onClick={() => setActiveRequestId(inputId.trim())} className="pro-button px-5 py-2 text-sm">
+              Open Request
             </button>
           </div>
 
-          <div className="mt-4">
-            <p className="text-sm text-slate-500 font-medium">
-              {loading ? 'Fetching records from MongoDB...' : activeRequestId ? `Viewing ID: ${activeRequestId}` : 'Enter an ID or select from recent sandbox requests.'}
-            </p>
-            {!!error && <p className="mt-2 text-sm text-rose-600 bg-rose-50 px-3 py-2 rounded border border-rose-100">{error}</p>}
-            {!!recentError && !activeRequestId && <p className="mt-2 text-sm text-rose-600 bg-rose-50 px-3 py-2 rounded border border-rose-100">{recentError}</p>}
+          <div className="mt-4 flex flex-col gap-2 text-sm text-slate-500">
+            <span>
+              {loading
+                ? 'Loading request from the status API...'
+                : activeRequestId
+                  ? `Viewing ${activeRequestId}`
+                  : 'Pick one of the recent requests or paste a request ID.'}
+            </span>
+            {!!error && (
+              <p className="rounded-xl border border-rose-100 bg-rose-50 px-3 py-2 text-sm text-rose-600">
+                {error}
+              </p>
+            )}
+            {!!recentError && !activeRequestId && (
+              <p className="rounded-xl border border-rose-100 bg-rose-50 px-3 py-2 text-sm text-rose-600">
+                {recentError}
+              </p>
+            )}
           </div>
-        </section>
+        </MotionSection>
 
         {!activeRequestId && (
-        <section className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
-          <h2 className="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2">
-            <Clock3 size={18} className="text-slate-400" /> Recent Faults & Requests
-          </h2>
-          <div className="grid gap-3">
-            {recent.length === 0 && <p className="text-sm text-slate-500 bg-slate-50 p-4 rounded border border-slate-100 text-center">No recent requests found in the system.</p>}
-            {recent.map((item) => (
-              <button
-                key={item.requestId}
-                onClick={() => {
-                  setInputId(item.requestId);
-                  setActiveRequestId(item.requestId);
-                }}
-                className={`flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded border transition-all text-left group
-                  ${activeRequestId === item.requestId 
-                    ? 'border-slate-800 bg-slate-50 ring-1 ring-slate-800' 
-                    : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50 bg-white'
-                  }`}
-              >
-                <div>
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="font-mono text-sm font-semibold text-slate-900">{item.requestId}</span>
-                    <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-slate-200 text-slate-700 transition-colors">
-                      {item.requestType ?? 'ticket'}
-                    </span>
+          <MotionSection
+            delay={0.1}
+            className="rounded-[28px] border border-slate-200/80 bg-white/90 p-6 shadow-[0_18px_50px_rgba(15,23,42,0.05)] backdrop-blur-sm"
+          >
+            <div className="mb-5 flex items-center gap-3">
+              <Clock3 size={18} className="text-slate-400" />
+              <div>
+                <h2 className="text-lg font-semibold text-slate-900">Recent Requests</h2>
+                <p className="text-sm text-slate-500">Latest pipeline traffic from the backend status feed.</p>
+              </div>
+            </div>
+
+            <div className="grid gap-3">
+              {recent.length === 0 && (
+                <p className="rounded-2xl border border-slate-100 bg-slate-50 p-4 text-center text-sm text-slate-500">
+                  No recent requests found.
+                </p>
+              )}
+
+              {recent.map((item) => (
+                <motion.button
+                  key={item.requestId}
+                  onClick={() => {
+                    setInputId(item.requestId);
+                    setActiveRequestId(item.requestId);
+                  }}
+                  whileHover={{ y: -3, scale: 1.01 }}
+                  transition={{ duration: 0.18, ease: 'easeOut' }}
+                  className="grid gap-4 rounded-[24px] border border-slate-200 bg-[linear-gradient(180deg,#ffffff_0%,#f8fafc_100%)] p-4 text-left shadow-[0_10px_24px_rgba(15,23,42,0.04)] transition-colors hover:border-slate-300 hover:bg-slate-50 md:grid-cols-[1.3fr_0.8fr_0.8fr]"
+                >
+                  <div>
+                    <div className="mb-1 flex flex-wrap items-center gap-2">
+                      <span className="font-mono text-sm font-semibold text-slate-900">{item.requestId}</span>
+                      {item.requestType ? <StatusPill tone="slate">{item.requestType}</StatusPill> : null}
+                      {item.reviewType ? <StatusPill tone="slate">{item.reviewType}</StatusPill> : null}
+                    </div>
+                    <p className="text-xs text-slate-500">{new Date(item.createdAt).toLocaleString()}</p>
                   </div>
-                  <p className="text-xs font-medium text-slate-500">
-                    {new Date(item.createdAt).toLocaleString()}
-                  </p>
-                </div>
-                <div className="mt-2 sm:mt-0 sm:text-right">
-                  <p className="text-sm font-medium text-slate-700 capitalize">
-                    {item.status ?? 'Processing'}
-                  </p>
-                  <p className="text-xs text-slate-500">
-                    {stepLabels[item.currentStep ?? ''] ?? item.currentStep ?? 'N/A'}
-                  </p>
-                </div>
-              </button>
-            ))}
-          </div>
-        </section>
+
+                  <div>
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400">Status</p>
+                    <p className="mt-1 text-sm font-medium text-slate-700">{humanize(item.status)}</p>
+                  </div>
+
+                  <div>
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400">Current Step</p>
+                    <p className="mt-1 text-sm font-medium text-slate-700">
+                      {stepLabels[item.currentStep ?? ''] ?? humanize(item.currentStep)}
+                    </p>
+                  </div>
+                </motion.button>
+              ))}
+            </div>
+          </MotionSection>
+        )}
+
+        {activeRequestId && loading && !ticket && (
+          <MotionSection className="rounded-[28px] border border-slate-200 bg-white p-8 shadow-sm">
+            <p className="text-sm text-slate-500">Fetching request details...</p>
+          </MotionSection>
         )}
 
         {ticket && (
-          <div className="space-y-6">
-            <section className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
-              <h2 className="text-lg font-bold text-slate-900 mb-4">Pipeline Resolution</h2>
-              {rcaInvoked && (
-                <div className="flex gap-4 items-start p-4 rounded bg-slate-50 border border-slate-200">
-                  <CheckCircle2 size={24} className="text-emerald-500 shrink-0" />
-                  <div>
-                    <h3 className="font-semibold text-slate-900">RCA Engine Active</h3>
-                    <p className="text-sm text-slate-600 mt-1 leading-relaxed">{ticket.workflow?.rca?.summary ?? ticket.statusMessage ?? 'OpenCode executed source analysis.'}</p>
+          <div className="grid gap-6">
+            <section className="rounded-[28px] border border-slate-200 bg-white p-8 shadow-sm">
+              <div className="flex flex-col gap-8 xl:grid xl:grid-cols-[1.25fr_0.75fr]">
+                <div>
+                  <button
+                    onClick={returnToDashboard}
+                    className="mb-4 inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-600 transition-colors hover:border-slate-300 hover:bg-white"
+                  >
+                    <LayoutDashboard size={12} />
+                    Back to Dashboard
+                  </button>
+                  <div className="mb-4 flex flex-wrap gap-2">
+                    <StatusPill tone={getStatusTone(ticket.status)}>
+                      {rcaInvoked ? <CheckCircle2 size={12} /> : rcaSkippedDuplicate ? <Clock3 size={12} /> : <Activity size={12} />}
+                      {requestStatusLabel}
+                    </StatusPill>
+                    <StatusPill tone="slate">{currentStepLabel}</StatusPill>
+                    {ticket.reviewType ? <StatusPill tone="slate">{ticket.reviewType}</StatusPill> : null}
+                    {ticket.primaryChoice ? <StatusPill tone="slate">{ticket.primaryChoice}</StatusPill> : null}
+                  </div>
+
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">
+                    Selected Request
+                  </p>
+                  <h2 className="mt-2 text-2xl font-semibold leading-tight tracking-tight text-slate-900 md:text-[2rem]">
+                    {summaryHeadline}
+                  </h2>
+                  <p className="mt-4 max-w-3xl text-sm leading-7 text-slate-600">
+                    {ticket.statusMessage ?? 'Waiting for the next status transition from the pipeline.'}
+                  </p>
+
+                  <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                    <MetricTile
+                      label="Request ID"
+                      value={ticket.requestId ?? 'N/A'}
+                      helper={ticket.requestType ?? 'Unknown type'}
+                      mono
+                    />
+                    <MetricTile
+                      label="Created"
+                      value={readDate(ticket.createdAt)}
+                      helper={ticket.pipelineVersion ?? 'Pipeline version unavailable'}
+                    />
+                    <MetricTile
+                      label="Last Updated"
+                      value={readDate(ticket.updatedAt)}
+                      helper={`Refreshed ${refreshLabel}`}
+                    />
+                    <MetricTile
+                      label="Images"
+                      value={String(imageCount)}
+                      helper={imageCount === 1 ? 'Screenshot attached' : 'Screenshots attached'}
+                    />
                   </div>
                 </div>
-              )}
-              {rcaSkippedDuplicate && (
-                <div className="flex gap-4 items-start p-4 rounded bg-slate-50 border border-slate-200">
-                  <Clock3 size={24} className="text-blue-500 shrink-0" />
-                  <div>
-                    <h3 className="font-semibold text-slate-900">Vector Deduplication Match</h3>
-                    <p className="text-sm text-slate-600 mt-1 leading-relaxed">
-                      Halting computation. Matched existing record: <span className="font-mono bg-slate-200 px-1 py-0.5 rounded text-xs">{ticket.workflow?.dedup?.matchedRecordId ?? ticket.rca?.result?.matchedRequestId ?? 'N/A'}</span>
-                    </p>
+
+                <div className="rounded-[24px] border border-slate-200 bg-slate-50 p-5">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">
+                    Execution Summary
+                  </p>
+
+                  {rcaInvoked && (
+                    <div className="mt-4 rounded-2xl border border-emerald-100 bg-emerald-50 p-4">
+                      <div className="flex items-start gap-3">
+                        <CheckCircle2 size={18} className="mt-0.5 shrink-0 text-emerald-600" />
+                        <div>
+                          <p className="font-medium text-emerald-900">RCA completed</p>
+                          <p className="mt-1 text-sm leading-6 text-emerald-800">
+                            {ticket.workflow?.rca?.summary ??
+                              ticket.rca?.summary ??
+                              'OpenCode RCA finished and produced an analysis output.'}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {rcaSkippedDuplicate && (
+                    <div className="mt-4 rounded-2xl border border-sky-100 bg-sky-50 p-4">
+                      <div className="flex items-start gap-3">
+                        <Clock3 size={18} className="mt-0.5 shrink-0 text-sky-600" />
+                        <div>
+                          <p className="font-medium text-sky-900">Duplicate path selected</p>
+                          <p className="mt-1 text-sm leading-6 text-sky-800">
+                            Matched request:{' '}
+                            <span className="font-mono text-xs">
+                              {ticket.workflow?.dedup?.matchedRecordId ??
+                                routingDecision?.matched_request_id ??
+                                ticket.rca?.result?.matchedRequestId ??
+                                'N/A'}
+                            </span>
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {!rcaInvoked && !rcaSkippedDuplicate && (
+                    <div className="mt-4 rounded-2xl border border-amber-100 bg-amber-50 p-4">
+                      <div className="flex items-start gap-3">
+                        <Activity size={18} className="mt-0.5 shrink-0 text-amber-600" />
+                        <div>
+                          <p className="font-medium text-amber-900">Trace in progress</p>
+                          <p className="mt-1 text-sm leading-6 text-amber-800">
+                            The request is still moving through the orchestration pipeline.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="mt-5 grid gap-3">
+                    <SummaryRow label="Flow" value={routingDecision?.flow ?? ticket.rca?.result?.source ?? 'Pending'} />
+                    <SummaryRow
+                      label="Decision Status"
+                      value={
+                        ticket.workflow?.rag?.status ??
+                        ticket.workflow?.rca?.status ??
+                        ticket.workflow?.dedup?.status ??
+                        ticket.rca?.status ??
+                        ticket.status
+                      }
+                    />
+                    <SummaryRow label="Repo Dir" value={ticket.rca?.result?.repoDir ?? 'Not assigned yet'} mono />
+                    <SummaryRow
+                      label="Matched ID"
+                      value={
+                        ticket.workflow?.dedup?.matchedRecordId ??
+                        routingDecision?.matched_request_id ??
+                        ticket.rca?.result?.matchedRequestId ??
+                        'N/A'
+                      }
+                      mono
+                    />
                   </div>
                 </div>
-              )}
-              {!rcaInvoked && !rcaSkippedDuplicate && (
-                <div className="flex gap-4 items-start p-4 rounded bg-slate-50 border border-slate-200">
-                  <XCircle size={24} className="text-slate-400 shrink-0" />
-                  <div>
-                    <h3 className="font-semibold text-slate-900">Trace In Progress</h3>
-                    <p className="text-sm text-slate-600 mt-1">Status: {ticket.status ?? 'N/A'} | Step: {ticket.currentStep ?? 'N/A'}</p>
-                  </div>
-                </div>
-              )}
+              </div>
             </section>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <section className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
-                <h2 className="text-lg font-bold text-slate-900 mb-4">Trace Identity</h2>
-                <div className="grid grid-cols-2 gap-4">
-                  <Field label="Request ID" value={ticket.requestId} mono />
-                  <Field label="Status" value={ticket.status} />
-                  <Field label="Current Step" value={ticket.currentStep} />
-                  <Field label="Request Type" value={ticket.requestType} />
-                  <Field label="Created At" value={readDate(ticket.createdAt)} />
-                  <Field label="Updated At" value={readDate(ticket.updatedAt)} />
+            <div className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
+              <section className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-sm">
+                <div className="mb-5 flex items-center gap-3">
+                  <FileText size={18} className="text-slate-400" />
+                  <div>
+                    <h3 className="text-lg font-semibold text-slate-900">Incident Context</h3>
+                    <p className="text-sm text-slate-500">AI extracted signal from the intake payload and screenshots.</p>
+                  </div>
                 </div>
+
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <Field label="Error Type" value={ticket.triage?.errorType} />
+                  <Field label="Severity" value={ticket.triage?.severity} />
+                  <Field label="Error Code" value={ticket.triage?.errorCode} />
+                  <Field label="System Context" value={ticket.triage?.systemContext} />
+                  <Field label="Page Context" value={ticket.triage?.pageContext} />
+                  <Field label="Impact Scope" value={ticket.triage?.impactScope} />
+                </div>
+
+                {ticket.triage?.structuredProblem && (
+                  <ProseBlock label="Structured Problem" value={ticket.triage.structuredProblem} />
+                )}
+
+                {ticket.triage?.impactAssessment && (
+                  <ProseBlock label="Impact Assessment" value={ticket.triage.impactAssessment} />
+                )}
+
+                {ticket.triage?.preliminaryAssessment && (
+                  <ProseBlock label="Preliminary Assessment" value={ticket.triage.preliminaryAssessment} />
+                )}
               </section>
 
-              <section className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
-                <h2 className="text-lg font-bold text-slate-900 mb-4">Orchestrator Routing</h2>
-                <div className="grid grid-cols-2 gap-4">
-                  <Field label="Planned Flow" value={ticket.workflow?.rag?.decision?.flow ?? 'N/A'} />
-                  <Field label="Decision Status" value={ticket.workflow?.dedup?.status ?? ticket.workflow?.rca?.status ?? 'N/A'} />
-                  <Field
-                    label="Matched ID"
-                    mono
-                    value={
-                      ticket.workflow?.dedup?.matchedRecordId ??
-                      ticket.workflow?.rag?.decision?.matched_request_id ??
-                      ticket.rca?.result?.matchedRequestId ??
-                      'N/A'
-                    }
-                  />
+              <section className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-sm">
+                <div className="mb-5 flex items-center gap-3">
+                  <Activity size={18} className="text-slate-400" />
+                  <div>
+                    <h3 className="text-lg font-semibold text-slate-900">Routing and Links</h3>
+                    <p className="text-sm text-slate-500">Decision data and downstream references exposed on the ticket.</p>
+                  </div>
+                </div>
+
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <Field label="Planned Flow" value={routingDecision?.flow} />
+                  <Field label="Confidence" value={routingDecision?.confidence} />
                   <Field
                     label="Match Score"
                     value={
-                      ticket.workflow?.rag?.decision?.matched_score != null
-                        ? String(ticket.workflow?.rag?.decision?.matched_score)
+                      routingDecision?.matched_score != null
+                        ? String(routingDecision.matched_score)
                         : ticket.rca?.result?.score != null
-                        ? String(ticket.rca?.result?.score)
-                        : 'N/A'
+                          ? String(ticket.rca.result.score)
+                          : undefined
                     }
                   />
+                  <Field label="RCA Source" value={ticket.rca?.result?.source} />
+                  <Field label="GitHub Status" value={ticket.github?.status} />
+                  <Field label="Repository" value={ticket.github?.repository} />
+                  <Field label="GitHub Mode" value={ticket.github?.mode} />
+                  <Field
+                    label="Issue Number"
+                    value={ticket.github?.issueNumber != null ? `#${ticket.github.issueNumber}` : undefined}
+                  />
                 </div>
-                
-                {ticket.workflow?.rag?.decision?.rationale && (
-                  <div className="mt-4 pt-4 border-t border-slate-100">
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Rationale</p>
-                    <p className="text-sm text-slate-700 leading-relaxed bg-slate-50 p-3 rounded border border-slate-100">{ticket.workflow.rag.decision.rationale}</p>
+
+                {routingDecision?.rationale && (
+                  <ProseBlock label="Routing Rationale" value={routingDecision.rationale} />
+                )}
+
+                {ticket.github?.issueTitle && (
+                  <ProseBlock label="GitHub Issue" value={ticket.github.issueTitle} />
+                )}
+
+                {githubLinks.length > 0 && (
+                  <div className="mt-6 space-y-3">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">
+                      GitHub References
+                    </p>
+                    {githubLinks.map((link) => (
+                      <a
+                        key={link.url}
+                        href={link.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="flex items-center justify-between rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 transition-colors hover:border-slate-300 hover:bg-white"
+                      >
+                        <span className="flex items-center gap-2 font-medium">
+                          <GitBranch size={16} className="text-slate-500" />
+                          {link.label}
+                        </span>
+                        <span className="flex items-center gap-2 font-mono text-xs text-slate-500">
+                          Open
+                          <ExternalLink size={14} />
+                        </span>
+                      </a>
+                    ))}
                   </div>
                 )}
               </section>
             </div>
 
-            <section className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
-              <h2 className="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2">
-                <FileText size={18} className="text-slate-400" /> AI Triage Summary
-              </h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                <Field label="Summary" value={ticket.triage?.summary} />
-                <Field label="Error Type" value={ticket.triage?.errorType} />
-                <Field label="Severity" value={ticket.triage?.severity} />
-                <Field label="System Context" value={ticket.triage?.systemContext} />
-              </div>
-
-              {ticket.triage?.structuredProblem && (
-                <div className="mb-4">
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Structured Problem</p>
-                  <p className="text-sm text-slate-700 leading-relaxed bg-slate-50 p-4 rounded border border-slate-100">{ticket.triage.structuredProblem}</p>
+            <div className="grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
+              <section className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-sm">
+                <div className="mb-5 flex items-center gap-3">
+                  <Activity size={18} className="text-slate-400" />
+                  <div>
+                    <h3 className="text-lg font-semibold text-slate-900">Artifact Ingestion</h3>
+                    <p className="text-sm text-slate-500">
+                      Storage stays private. The dashboard reports capture state only.
+                    </p>
+                  </div>
                 </div>
-              )}
 
-              {ticket.triage?.impactAssessment && (
-                <div className="mb-4">
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Impact Assessment</p>
-                  <p className="text-sm text-slate-700 leading-relaxed bg-slate-50 p-4 rounded border border-slate-100">{ticket.triage.impactAssessment}</p>
+                <div className="space-y-3">
+                  <ArtifactRow
+                    label="Input Artifact"
+                    status={inputReady ? 'Ingested' : shouldPoll ? 'Pending' : 'Unavailable'}
+                    tone={inputReady ? 'emerald' : shouldPoll ? 'amber' : 'slate'}
+                    helper="Structured intake payload persisted for downstream processing."
+                  />
+                  <ArtifactRow
+                    label="Output Artifact"
+                    status={outputReady ? 'Ingested' : shouldPoll ? 'Pending' : 'Unavailable'}
+                    tone={outputReady ? 'emerald' : shouldPoll ? 'amber' : 'slate'}
+                    helper="Generated RCA report or derived pipeline output."
+                  />
+                  <ArtifactRow
+                    label="System Logs"
+                    status={logsReady ? 'Ingested' : shouldPoll ? 'Pending' : 'Unavailable'}
+                    tone={logsReady ? 'emerald' : shouldPoll ? 'amber' : 'slate'}
+                    helper="Runtime logs attached to the request history."
+                  />
+                  <ArtifactRow
+                    label="Received Images"
+                    status={String(imageCount)}
+                    tone={imageCount > 0 ? 'emerald' : 'slate'}
+                    helper={imageCount > 0 ? 'Image payload evidence captured.' : 'No images attached to this request.'}
+                  />
                 </div>
-              )}
 
-              {(ticket.triage?.dataGaps?.length ?? 0) > 0 && (
-                <div className="mt-4">
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Data Gaps</p>
-                  <ul className="space-y-2">
-                    {ticket.triage?.dataGaps?.slice(0, 4).map((gap, i) => (
-                      <li key={i} className="flex items-start gap-2 text-sm text-slate-700">
-                        <div className="w-1.5 h-1.5 rounded-full bg-slate-300 mt-1.5 shrink-0" />
-                        <span>{gap}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-            </section>
-
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <section className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
-                <h2 className="text-lg font-bold text-slate-900 mb-4">Intake Signatures</h2>
-                <div className="grid gap-4">
-                  <Field label="Issue Fingerprint" value={ticket.intake?.issueFingerprint} mono />
-                  <Field label="Description Hash" value={ticket.intake?.issueDescriptionHash} mono />
-                  <Field label="Received Images" value={String(ticket.intake?.receivedImageCount ?? 0)} />
+                <div className="mt-6 grid gap-4 sm:grid-cols-2">
+                  <Field label="Storage Route" value={ticket.storage?.route ?? ticket.primaryChoice} />
+                  <Field label="Problems Prefix" value={ticket.storage?.problemsPrefix} mono />
                 </div>
               </section>
 
-              <section className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 flex flex-col">
-                <h2 className="text-lg font-bold text-slate-900 mb-4">Artifacts & Storage</h2>
-                <p className="text-sm text-slate-500 mb-6">Storage objects managed by Cloudflare R2.</p>
-                
-                <div className="flex flex-wrap gap-3 mt-auto">
-                  {ticket.artifactUrls?.output?.[0] ? (
-                    <a href={ticket.artifactUrls.output[0]} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 px-4 py-2 bg-slate-50 border border-slate-200 hover:border-slate-300 hover:bg-slate-100 rounded text-sm font-medium text-slate-700 transition-colors">
-                      <Database size={16} className="text-slate-600" /> Output Artifact <ExternalLink size={14} className="text-slate-400" />
-                    </a>
-                  ) : (
-                    <div className="inline-flex items-center gap-2 px-4 py-2 bg-slate-50 border border-slate-100 rounded text-sm font-medium text-slate-400">
-                      <Database size={16} /> No Output Artifacts
-                    </div>
-                  )}
-                  {ticket.artifactUrls?.logs?.[0] ? (
-                    <a href={ticket.artifactUrls.logs[0]} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 px-4 py-2 bg-slate-50 border border-slate-200 hover:border-slate-300 hover:bg-slate-100 rounded text-sm font-medium text-slate-700 transition-colors">
-                      <Database size={16} className="text-slate-600" /> System Logs <ExternalLink size={14} className="text-slate-400" />
-                    </a>
-                  ) : (
-                    <div className="inline-flex items-center gap-2 px-4 py-2 bg-slate-50 border border-slate-100 rounded text-sm font-medium text-slate-400">
-                      <Database size={16} /> No Log Artifacts
-                    </div>
-                  )}
+              <section className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-sm">
+                <div className="mb-5 flex items-center gap-3">
+                  <FileText size={18} className="text-slate-400" />
+                  <div>
+                    <h3 className="text-lg font-semibold text-slate-900">Evidence and Gaps</h3>
+                    <p className="text-sm text-slate-500">Useful extracted observations and missing information.</p>
+                  </div>
+                </div>
+
+                <div className="grid gap-5 md:grid-cols-2">
+                  <ListBlock
+                    title="Image Evidence"
+                    items={ticket.triage?.imageEvidence ?? []}
+                    emptyLabel="No image evidence extracted."
+                  />
+                  <ListBlock
+                    title="Data Gaps"
+                    items={ticket.triage?.dataGaps ?? []}
+                    emptyLabel="No outstanding data gaps."
+                  />
                 </div>
               </section>
             </div>
 
-            <section className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
-              <h2 className="text-lg font-bold text-slate-900 mb-6">Pipeline Timeline</h2>
+            <section className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-sm">
+              <div className="mb-6 flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
+                <div>
+                  <h3 className="text-lg font-semibold text-slate-900">Pipeline Timeline</h3>
+                  <p className="text-sm text-slate-500">
+                    Ordered execution events from request intake through RCA completion.
+                  </p>
+                </div>
+                <StatusPill tone={shouldPoll ? 'amber' : 'slate'}>
+                  {shouldPoll ? 'Tracking live updates' : 'Stable history'}
+                </StatusPill>
+              </div>
+
               <div className="space-y-4">
-                {timeline.length === 0 && <p className="text-sm text-slate-500">No timeline data available.</p>}
-                {timeline.map((item, i) => (
-                  <div key={item.id} className="relative pl-6 pb-4 last:pb-0">
-                    {/* Timeline line */}
-                    {i !== timeline.length - 1 && (
-                      <div className="absolute left-[11px] top-6 bottom-0 w-px bg-slate-200" />
-                    )}
-                    {/* Timeline dot */}
-                    <div className={`absolute left-0 top-1.5 w-6 h-6 rounded-full border-2 bg-white flex items-center justify-center
-                      ${item.done ? 'border-slate-800' : 'border-slate-300'}`}
-                    >
-                      {item.done && <div className="w-2.5 h-2.5 bg-slate-800 rounded-full" />}
-                    </div>
-                    
-                    <div className={`p-4 rounded border ${item.done ? 'bg-slate-50 border-slate-200' : 'bg-white border-slate-100'}`}>
-                      <div className="flex justify-between items-start gap-4 mb-1">
-                        <h4 className="font-bold text-slate-900 text-sm">{item.title}</h4>
-                        <span className="text-[10px] font-mono text-slate-500 whitespace-nowrap bg-white px-2 py-0.5 rounded shadow-sm border border-slate-100">{item.at}</span>
+                {timeline.length === 0 && (
+                  <p className="text-sm text-slate-500">No timeline data available for this request.</p>
+                )}
+
+                {timeline.map((item, index) => {
+                  const isLatest = index === timeline.length - 1;
+                  const activeTone = isLatest && shouldPoll ? 'border-amber-200 bg-amber-50' : 'border-slate-200 bg-white';
+
+                  return (
+                    <div key={item.id} className="relative pl-8">
+                      {index !== timeline.length - 1 && (
+                        <div className="absolute left-[13px] top-7 bottom-[-18px] w-px bg-slate-200" />
+                      )}
+
+                      <div className="absolute left-0 top-1 flex h-7 w-7 items-center justify-center rounded-full border border-slate-300 bg-white">
+                        <div className={`h-2.5 w-2.5 rounded-full ${isLatest && shouldPoll ? 'bg-amber-500' : 'bg-slate-800'}`} />
                       </div>
-                      <p className="text-sm text-slate-600">{item.message || 'Processing step.'}</p>
+
+                      <div className={`rounded-2xl border p-4 ${activeTone}`}>
+                        <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                          <div>
+                            <div className="flex flex-wrap items-center gap-2">
+                              <h4 className="text-sm font-semibold text-slate-900">{item.title}</h4>
+                              <StatusPill tone={isLatest && shouldPoll ? 'amber' : 'slate'}>
+                                {item.status}
+                              </StatusPill>
+                            </div>
+                            <p className="mt-2 text-sm leading-6 text-slate-600">
+                              {item.message || 'Processing step.'}
+                            </p>
+                          </div>
+                          <span className="font-mono text-xs text-slate-500">{item.at}</span>
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </section>
           </div>
@@ -570,9 +1058,9 @@ export default function RequestsDashboardPage() {
 
 function RequestsDashboardFallback() {
   return (
-    <div className="font-sans bg-slate-50 text-slate-900 min-h-screen">
-      <main className="pt-24 pb-20 px-6 max-w-5xl mx-auto">
-        <section className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+    <div className="min-h-screen bg-slate-50 text-slate-900">
+      <main className="mx-auto max-w-7xl px-6 pb-20 pt-24">
+        <section className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-sm">
           <p className="text-sm text-slate-500">Loading requests dashboard...</p>
         </section>
       </main>
@@ -580,13 +1068,145 @@ function RequestsDashboardFallback() {
   );
 }
 
-function Field({ label, value, mono = false }: { label: string; value?: string | null; mono?: boolean }) {
+function MotionSection({
+  children,
+  className,
+  delay = 0,
+}: {
+  children: ReactNode;
+  className: string;
+  delay?: number;
+}) {
   return (
-    <div className="flex flex-col justify-center">
-      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">{label}</span>
-      <span className={`text-sm text-slate-900 ${mono ? 'font-mono text-xs bg-slate-50 px-2 py-1 rounded border border-slate-200' : 'font-medium'} break-words`}>
+    <motion.section
+      initial={{ opacity: 0, y: 18 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ ...revealTransition, delay }}
+      className={className}
+    >
+      {children}
+    </motion.section>
+  );
+}
+
+function StatusPill({
+  children,
+  tone = 'slate',
+}: {
+  children: ReactNode;
+  tone?: 'emerald' | 'amber' | 'rose' | 'slate';
+}) {
+  const toneClasses = {
+    emerald: 'border-emerald-200 bg-emerald-50 text-emerald-700',
+    amber: 'border-amber-200 bg-amber-50 text-amber-700',
+    rose: 'border-rose-200 bg-rose-50 text-rose-700',
+    slate: 'border-slate-200 bg-slate-100 text-slate-700',
+  };
+
+  return (
+    <span className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold ${toneClasses[tone]}`}>
+      {children}
+    </span>
+  );
+}
+
+function MetricTile({
+  label,
+  value,
+  helper,
+  mono = false,
+}: {
+  label: string;
+  value: string;
+  helper: string;
+  mono?: boolean;
+}) {
+  return (
+    <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+      <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400">{label}</p>
+      <p className={`mt-2 text-sm font-semibold text-slate-900 ${mono ? 'font-mono text-xs' : ''}`}>{value}</p>
+      <p className="mt-1 text-xs text-slate-500">{helper}</p>
+    </div>
+  );
+}
+
+function SummaryRow({ label, value, mono = false }: { label: string; value?: string | null; mono?: boolean }) {
+  return (
+    <div className="flex items-start justify-between gap-4 rounded-2xl border border-slate-200 bg-white px-4 py-3">
+      <span className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">{label}</span>
+      <span className={`text-right text-sm text-slate-700 ${mono ? 'font-mono text-xs' : 'font-medium'}`}>
         {value || 'N/A'}
       </span>
+    </div>
+  );
+}
+
+function Field({ label, value, mono = false }: { label: string; value?: string | null; mono?: boolean }) {
+  return (
+    <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+      <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400">{label}</p>
+      <p className={`mt-2 break-words text-sm text-slate-900 ${mono ? 'font-mono text-xs' : 'font-medium'}`}>
+        {value || 'N/A'}
+      </p>
+    </div>
+  );
+}
+
+function ProseBlock({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="mt-6 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+      <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">{label}</p>
+      <p className="mt-3 text-sm leading-7 text-slate-700">{value}</p>
+    </div>
+  );
+}
+
+function ArtifactRow({
+  label,
+  status,
+  tone,
+  helper,
+}: {
+  label: string;
+  status: string;
+  tone: 'emerald' | 'amber' | 'rose' | 'slate';
+  helper: string;
+}) {
+  return (
+    <div className="flex items-start justify-between gap-4 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+      <div>
+        <p className="text-sm font-medium text-slate-900">{label}</p>
+        <p className="mt-1 text-xs text-slate-500">{helper}</p>
+      </div>
+      <StatusPill tone={tone}>{status}</StatusPill>
+    </div>
+  );
+}
+
+function ListBlock({
+  title,
+  items,
+  emptyLabel,
+}: {
+  title: string;
+  items: string[];
+  emptyLabel: string;
+}) {
+  return (
+    <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+      <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">{title}</p>
+      {items.length === 0 ? (
+        <p className="mt-3 text-sm text-slate-500">{emptyLabel}</p>
+      ) : (
+        <ul className="mt-3 space-y-3">
+          {items.slice(0, 5).map((item, index) => (
+            <li key={`${title}-${index}`} className="flex gap-3 text-sm leading-6 text-slate-700">
+              <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-slate-300" />
+              <span>{item}</span>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }
