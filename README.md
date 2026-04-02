@@ -34,3 +34,17 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+## Deployment env checklist
+
+1. Copy `.env.example` to your deployment provider's environment variables.
+2. Set `JDI_BACKEND_URL` to your deployed FastAPI base URL (server-side usage).
+3. Set `NEXT_PUBLIC_JDI_BACKEND_URL` only if browser-side components must call that backend directly.
+4. Set Mongo URI using `MONGODB_URI` (preferred) or `uri` (legacy-compatible).
+5. Set R2/S3 variables for endpoint, key, secret, and bucket.
+
+### Build behavior
+
+Production build is configured to continue even when TypeScript errors exist by setting `typescript.ignoreBuildErrors = true` in `next.config.ts`.
+
+Use this only as a temporary bypass while you intentionally keep known type issues.

@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { UploadCloud, CheckCircle2, AlertCircle, TriangleAlert } from 'lucide-react';
+import { UploadCloud, AlertCircle, TriangleAlert } from 'lucide-react';
 import ErrorReporter from '@/components/ErrorReporter';
 
 export default function SandboxPage() {

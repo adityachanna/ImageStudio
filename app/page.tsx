@@ -3,13 +3,12 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import ArchitectureFlow from '../components/ArchitectureFlow';
-import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowRight, Terminal, Box, Activity, ShieldCheck, Code, Database, Zap, FileText } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { ArrowRight, Terminal, Box, Activity, ShieldCheck, Code, Database } from 'lucide-react';
 
 export default function LandingPage() {
   const fullText = "Automated Root Cause\nAnalysis Pipeline.";
   const [typedText, setTypedText] = useState('');
-  const [cursorVisible, setCursorVisible] = useState(true);
 
   useEffect(() => {
     let currentText = '';

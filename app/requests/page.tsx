@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { Suspense, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { CheckCircle2, Clock3, Database, ExternalLink, Search, XCircle, LayoutDashboard, FileText, Activity } from 'lucide-react';
@@ -123,7 +123,7 @@ function parseTicket(payload: unknown): Ticket | null {
   return null;
 }
 
-export default function RequestsDashboardPage() {
+function RequestsDashboardContent() {
   const searchParams = useSearchParams();
 
   const [inputId, setInputId] = useState('');
@@ -555,6 +555,26 @@ export default function RequestsDashboardPage() {
             </section>
           </div>
         )}
+      </main>
+    </div>
+  );
+}
+
+export default function RequestsDashboardPage() {
+  return (
+    <Suspense fallback={<RequestsDashboardFallback />}>
+      <RequestsDashboardContent />
+    </Suspense>
+  );
+}
+
+function RequestsDashboardFallback() {
+  return (
+    <div className="font-sans bg-slate-50 text-slate-900 min-h-screen">
+      <main className="pt-24 pb-20 px-6 max-w-5xl mx-auto">
+        <section className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+          <p className="text-sm text-slate-500">Loading requests dashboard...</p>
+        </section>
       </main>
     </div>
   );
