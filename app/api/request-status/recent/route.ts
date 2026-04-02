@@ -11,6 +11,53 @@ type RecentTicket = {
   currentStep?: string;
 };
 
+function resolveBackendBaseUrl(): string | null {
+  const candidates = [process.env.JDI_BACKEND_URL, process.env.NEXT_PUBLIC_JDI_BACKEND_URL]
+    .map((value) => value?.trim())
+    .filter((value): value is string => !!value);
+
+  if (candidates.length === 0) {
+    // Local default only; production must provide an explicit backend URL.
+    return process.env.NODE_ENV === 'production' ? null : 'http://127.0.0.1:8000';
+  }
+
+  return candidates[0].replace(/\/$/, '');
+}
+
+async function tryFetchRecent(endpoint: string): Promise<{ ok: boolean; payload?: unknown; detail?: string }> {
+  try {
+    const res = await fetch(endpoint, {
+      cache: 'no-store',
+      headers: {
+        Accept: 'application/json',
+      },
+    });
+
+    const bodyText = await res.text();
+    let payload: unknown = null;
+
+    if (bodyText) {
+      try {
+        payload = JSON.parse(bodyText) as unknown;
+      } catch {
+        payload = { raw: bodyText };
+      }
+    }
+
+    if (!res.ok) {
+      const detail = typeof payload === 'object' && payload && 'detail' in (payload as Record<string, unknown>)
+        ? String((payload as Record<string, unknown>).detail)
+        : `status ${res.status}`;
+      return { ok: false, detail };
+    }
+
+    return { ok: true, payload };
+  } catch (error) {
+    const detail = error instanceof Error ? error.message : String(error);
+    return { ok: false, detail };
+  }
+}
+
 function readDate(value: unknown): string {
   if (typeof value === 'string') return value;
   if (value && typeof value === 'object') {
@@ -57,33 +104,56 @@ export async function GET(request: Request) {
   const rawLimit = Number(url.searchParams.get('limit') ?? '5');
   const limit = Number.isFinite(rawLimit) ? Math.max(1, Math.min(20, rawLimit)) : 5;
 
-  const backend = (
-    process.env.JDI_BACKEND_URL ??
-    process.env.NEXT_PUBLIC_JDI_BACKEND_URL ??
-    'http://127.0.0.1:8000'
-  ).replace(/\/$/, '');
-  const endpoint = `${backend}/api/tickets/recent/list`;
+  const backend = resolveBackendBaseUrl();
+  if (!backend) {
+    return NextResponse.json(
+      {
+        error: 'Backend URL is not configured. Set JDI_BACKEND_URL (or NEXT_PUBLIC_JDI_BACKEND_URL).',
+        records: [],
+      },
+      { status: 500 }
+    );
+  }
+
+  const endpoints = [
+    `${backend}/api/tickets/recent/list?limit=${limit}`,
+    `${backend}/api/tickets/recent/list`,
+    `${backend}/api/tickets/recent?limit=${limit}`,
+    `${backend}/api/tickets/recent`,
+  ];
 
   try {
-    const res = await fetch(endpoint, { cache: 'no-store' });
-    if (!res.ok) {
-      return NextResponse.json(
-        { error: `FastAPI recent endpoint failed with status ${res.status}.`, records: [] },
-        { status: res.status }
-      );
+    const failures: string[] = [];
+    for (const endpoint of endpoints) {
+      const result = await tryFetchRecent(endpoint);
+      if (!result.ok) {
+        failures.push(`${endpoint} -> ${result.detail ?? 'request failed'}`);
+        continue;
+      }
+
+      const rows = normalizeArray(result.payload);
+      const records = mapRecentRows(rows, limit);
+
+      return NextResponse.json({ source: `fastapi:${endpoint}`, records }, { status: 200 });
     }
 
-    const payload = (await res.json()) as unknown;
-    const rows = normalizeArray(payload);
-    const records = mapRecentRows(rows, limit);
-
-    return NextResponse.json({ source: `fastapi:${endpoint}`, records }, { status: 200 });
+    return NextResponse.json(
+      {
+        error: 'Failed to fetch recent requests from FastAPI endpoint.',
+        detail: failures.join(' | '),
+        records: [],
+      },
+      { status: 502 }
+    );
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
-    return NextResponse.json({
-      error: 'Failed to fetch recent requests from FastAPI endpoint.',
-      detail: errorMessage,
-      records: []
-    }, { status: 500 });
+    return NextResponse.json(
+      {
+        error: 'Failed to fetch recent requests from FastAPI endpoint.',
+        detail: errorMessage,
+        records: [],
+      },
+      { status: 500 }
+    );
   }
 }

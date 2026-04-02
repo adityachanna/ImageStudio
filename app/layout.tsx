@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { Inter, Space_Mono } from 'next/font/google';
 import './globals.css';
+import BackendHealthPing from '../components/BackendHealthPing';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-sans' });
 const spaceMono = Space_Mono({ subsets: ['latin'], weight: ['400', '700'], variable: '--font-mono' });
@@ -18,6 +19,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
       </head>
       <body className="min-h-screen font-sans text-[var(--text-main)] bg-[var(--bg-base)] selection:bg-[var(--accent-light)] selection:text-[var(--accent)]">
+        <BackendHealthPing />
         {children}
       </body>
     </html>
