@@ -25,6 +25,8 @@ const techStack = [
   { name: 'React', desc: 'UI Core', iconUrl: 'https://cdn.simpleicons.org/react/61DAFB' },
 ];
 
+const heroLines = ['Automated Root Cause', 'Analysis Pipeline.'];
+
 const dashboardHighlights = [
   {
     title: 'Real-time tracing',
@@ -58,16 +60,16 @@ const reveal = {
 };
 
 export default function LandingPage() {
-  const fullText = 'Automated Root Cause\nAnalysis Pipeline.';
   const [typedText, setTypedText] = useState('');
 
   useEffect(() => {
     let currentText = '';
     let index = 0;
+    const joinedText = heroLines.join('\n');
 
     const intervalId = window.setInterval(() => {
-      if (index < fullText.length) {
-        currentText += fullText[index];
+      if (index < joinedText.length) {
+        currentText += joinedText[index];
         setTypedText(currentText);
         index += 1;
         return;
@@ -105,7 +107,7 @@ export default function LandingPage() {
       </nav>
 
       <main className="pt-16">
-        <section className="relative min-h-[90vh] overflow-hidden border-b border-slate-100 px-6 pb-24 pt-28">
+        <section className="relative min-h-[84vh] overflow-hidden border-b border-slate-100 px-6 pb-20 pt-22">
           <motion.div
             initial={{ opacity: 0, scale: 0.94 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -139,7 +141,11 @@ export default function LandingPage() {
                 {typedText.split('\n').map((line, index) => (
                   <React.Fragment key={index}>
                     {index > 0 && <br />}
-                    {index === 1 ? <span className="font-light text-slate-500">{line}</span> : line}
+                    {index === 1 ? (
+                      <span className="inline-block font-light text-slate-500">{line}</span>
+                    ) : (
+                      line
+                    )}
                   </React.Fragment>
                 ))}
                 <motion.span
