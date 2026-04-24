@@ -51,7 +51,7 @@ export async function POST(req: Request) {
     }
 
     // ── Process with sharp ──────────────────────────────────────────────────
-    const outputBuffer = await sharp(undefined)
+    const outputBuffer = await sharp(inputBuffer)
       .resize({ width, height, fit: sharp.fit.inside, withoutEnlargement: true })
       .toFormat(sharpFormat)
       .toBuffer();
