@@ -4,88 +4,88 @@ Follow your AGENTS.md constraints strictly (read-only, minimal scoped fix plan, 
 
 MongoDB ticket context:
 {
-  "requestId": "INC-20260424-052044-835",
+  "requestId": "INC-20260424-072905-629",
   "reviewType": "Image Studio",
   "requestType": "Bug Report",
-  "primaryChoice": "JDI",
+  "primaryChoice": "JGL",
   "status": "processing",
   "storage": {
-    "route": "JDI",
+    "route": "JGL",
     "imageCount": 0,
     "imageObjects": [],
     "inputArtifact": {
       "bucket": "local",
-      "key": "JDI/input/INC-20260424-052044-835/payload.json",
+      "key": "JGL/input/INC-20260424-072905-629/payload.json",
       "fileName": "payload.json",
       "contentType": "application/json",
-      "size": 224,
+      "size": 219,
       "etag": null,
-      "objectUrl": "file:///C:/Users/Administrator/mamba/backend/local_uploads/JDI/input/INC-20260424-052044-835/payload.json"
+      "objectUrl": "file:///C:/Users/Administrator/mamba/backend/local_uploads/JGL/input/INC-20260424-072905-629/payload.json"
     },
     "outputArtifact": {
       "bucket": "local",
-      "key": "JDI/output/INC-20260424-052044-835/response.json",
+      "key": "JGL/output/INC-20260424-072905-629/response.json",
       "fileName": "response.json",
       "contentType": "application/json",
-      "size": 35071,
+      "size": 35437,
       "etag": null,
-      "objectUrl": "file:///C:/Users/Administrator/mamba/backend/local_uploads/JDI/output/INC-20260424-052044-835/response.json"
+      "objectUrl": "file:///C:/Users/Administrator/mamba/backend/local_uploads/JGL/output/INC-20260424-072905-629/response.json"
     },
     "logArtifacts": [
       {
         "bucket": "local",
-        "key": "JDI/logs/INC-20260424-052044-835/app.log",
+        "key": "JGL/logs/INC-20260424-072905-629/app.log",
         "fileName": "app.log",
         "contentType": "text/plain",
         "size": 69,
         "etag": null,
-        "objectUrl": "file:///C:/Users/Administrator/mamba/backend/local_uploads/JDI/logs/INC-20260424-052044-835/app.log"
+        "objectUrl": "file:///C:/Users/Administrator/mamba/backend/local_uploads/JGL/logs/INC-20260424-072905-629/app.log"
       }
     ]
   },
   "artifactUrls": {
     "problems": [],
     "input": [
-      "file:///C:/Users/Administrator/mamba/backend/local_uploads/JDI/input/INC-20260424-052044-835/payload.json"
+      "file:///C:/Users/Administrator/mamba/backend/local_uploads/JGL/input/INC-20260424-072905-629/payload.json"
     ],
     "output": [
-      "file:///C:/Users/Administrator/mamba/backend/local_uploads/JDI/output/INC-20260424-052044-835/response.json"
+      "file:///C:/Users/Administrator/mamba/backend/local_uploads/JGL/output/INC-20260424-072905-629/response.json"
     ],
     "logs": [
-      "file:///C:/Users/Administrator/mamba/backend/local_uploads/JDI/logs/INC-20260424-052044-835/app.log"
+      "file:///C:/Users/Administrator/mamba/backend/local_uploads/JGL/logs/INC-20260424-072905-629/app.log"
     ]
   },
   "analysis": {
     "model": "moonshotai.kimi-k2.5",
     "imageCount": 0,
-    "embeddingText": "[content_issue] Image compression issue in Image Studio. User reports a compression issue in Image Studio. The specific nature of the compression problem (quality degradation, file size, format conversion, or processing failure) is not detailed in the submission. System: Image Studio - a content creation and image editing platform. Page: Image Studio interface, likely during image processing or export workflow. Code: unknown.",
+    "embeddingText": "[workflow_blocked] PNG compression failing in Image Studio. User reports that PNG files are not being compressed when using the Image Studio submission feature. The compression workflow appears to be failing or not producing expected output, blocking the user's ability to optimize image file sizes. System: Image Studio - a media processing and optimization platform for image compression and format conversion. Page: Image Studio submission/compression interface where users upload and compress image files. Code: unknown.",
     "structured": {
-      "short_summary": "Image compression issue in Image Studio",
-      "structured_problem": "User reports a compression issue in Image Studio. The specific nature of the compression problem (quality degradation, file size, format conversion, or processing failure) is not detailed in the submission.",
-      "error_type": "content_issue",
-      "system_context": "Image Studio - a content creation and image editing platform",
-      "page_context": "Image Studio interface, likely during image processing or export workflow",
+      "short_summary": "PNG compression failing in Image Studio",
+      "structured_problem": "User reports that PNG files are not being compressed when using the Image Studio submission feature. The compression workflow appears to be failing or not producing expected output, blocking the user's ability to optimize image file sizes.",
+      "error_type": "workflow_blocked",
+      "system_context": "Image Studio - a media processing and optimization platform for image compression and format conversion",
+      "page_context": "Image Studio submission/compression interface where users upload and compress image files",
       "error_code": "unknown",
       "severity": "medium",
       "image_evidence": [],
       "related_issues": [],
-      "impact_scope": "Individual user (aditya@email.com) attempting to use image compression functionality",
-      "impact_assessment": "User workflow blocked or degraded due to unspecified compression issue; impact limited to single user until scope is clarified",
-      "preliminary_assessment": "Content processing issue in Image Studio related to image compression functionality. Insufficient detail provided to determine if this is a quality issue, file size issue, format conversion failure, or complete processing failure.",
+      "impact_scope": "Individual user workflow for PNG image compression",
+      "impact_assessment": "User unable to compress PNG files, potentially affecting image optimization workflows and file size management for web or storage purposes",
+      "preliminary_assessment": "Workflow blockage in Image Studio PNG compression feature. Root cause unknown - could be file validation failure, processing error, or UI state issue. Requires reproduction with specific file details and error logs.",
       "data_gaps": [
-        "Specific nature of compression issue (quality loss, file size unexpected, format error, processing failure)",
-        "Exact workflow step where issue occurs",
-        "Expected vs actual compression results",
-        "Image format and size being processed",
-        "Error messages or visual artifacts observed",
+        "Specific error message displayed to user",
+        "Whether issue affects all PNG files or specific ones",
+        "File size or dimensions of affected PNGs",
         "Browser and OS environment",
-        "Frequency of occurrence (one-time or reproducible)",
-        "Specific Image Studio feature being used (export, save, batch processing)"
+        "Whether compression starts but fails or never initiates",
+        "Expected vs actual file size output",
+        "Whether other image formats (JPEG, WebP) compress successfully",
+        "Timestamp of last successful PNG compression"
       ],
       "occurrence_hint": "unclear",
-      "embedding_text": "[content_issue] Image compression issue in Image Studio. User reports a compression issue in Image Studio. The specific nature of the compression problem (quality degradation, file size, format conversion, or processing failure) is not detailed in the submission. System: Image Studio - a content creation and image editing platform. Page: Image Studio interface, likely during image processing or export workflow. Code: unknown.",
+      "embedding_text": "[workflow_blocked] PNG compression failing in Image Studio. User reports that PNG files are not being compressed when using the Image Studio submission feature. The compression workflow appears to be failing or not producing expected output, blocking the user's ability to optimize image file sizes. System: Image Studio - a media processing and optimization platform for image compression and format conversion. Page: Image Studio submission/compression interface where users upload and compress image files. Code: unknown.",
       "triage_signals": {
-        "route": "JDI",
+        "route": "JGL",
         "submissionType": "Image Studio",
         "requestType": "Bug Report",
         "hasImages": false,
@@ -100,32 +100,32 @@ MongoDB ticket context:
 
 Structured incident:
 {
-  "short_summary": "Image compression issue in Image Studio",
-  "structured_problem": "User reports a compression issue in Image Studio. The specific nature of the compression problem (quality degradation, file size, format conversion, or processing failure) is not detailed in the submission.",
-  "error_type": "content_issue",
-  "system_context": "Image Studio - a content creation and image editing platform",
-  "page_context": "Image Studio interface, likely during image processing or export workflow",
+  "short_summary": "PNG compression failing in Image Studio",
+  "structured_problem": "User reports that PNG files are not being compressed when using the Image Studio submission feature. The compression workflow appears to be failing or not producing expected output, blocking the user's ability to optimize image file sizes.",
+  "error_type": "workflow_blocked",
+  "system_context": "Image Studio - a media processing and optimization platform for image compression and format conversion",
+  "page_context": "Image Studio submission/compression interface where users upload and compress image files",
   "error_code": "unknown",
   "severity": "medium",
   "image_evidence": [],
   "related_issues": [],
-  "impact_scope": "Individual user (aditya@email.com) attempting to use image compression functionality",
-  "impact_assessment": "User workflow blocked or degraded due to unspecified compression issue; impact limited to single user until scope is clarified",
-  "preliminary_assessment": "Content processing issue in Image Studio related to image compression functionality. Insufficient detail provided to determine if this is a quality issue, file size issue, format conversion failure, or complete processing failure.",
+  "impact_scope": "Individual user workflow for PNG image compression",
+  "impact_assessment": "User unable to compress PNG files, potentially affecting image optimization workflows and file size management for web or storage purposes",
+  "preliminary_assessment": "Workflow blockage in Image Studio PNG compression feature. Root cause unknown - could be file validation failure, processing error, or UI state issue. Requires reproduction with specific file details and error logs.",
   "data_gaps": [
-    "Specific nature of compression issue (quality loss, file size unexpected, format error, processing failure)",
-    "Exact workflow step where issue occurs",
-    "Expected vs actual compression results",
-    "Image format and size being processed",
-    "Error messages or visual artifacts observed",
+    "Specific error message displayed to user",
+    "Whether issue affects all PNG files or specific ones",
+    "File size or dimensions of affected PNGs",
     "Browser and OS environment",
-    "Frequency of occurrence (one-time or reproducible)",
-    "Specific Image Studio feature being used (export, save, batch processing)"
+    "Whether compression starts but fails or never initiates",
+    "Expected vs actual file size output",
+    "Whether other image formats (JPEG, WebP) compress successfully",
+    "Timestamp of last successful PNG compression"
   ],
   "occurrence_hint": "unclear",
-  "embedding_text": "[content_issue] Image compression issue in Image Studio. User reports a compression issue in Image Studio. The specific nature of the compression problem (quality degradation, file size, format conversion, or processing failure) is not detailed in the submission. System: Image Studio - a content creation and image editing platform. Page: Image Studio interface, likely during image processing or export workflow. Code: unknown.",
+  "embedding_text": "[workflow_blocked] PNG compression failing in Image Studio. User reports that PNG files are not being compressed when using the Image Studio submission feature. The compression workflow appears to be failing or not producing expected output, blocking the user's ability to optimize image file sizes. System: Image Studio - a media processing and optimization platform for image compression and format conversion. Page: Image Studio submission/compression interface where users upload and compress image files. Code: unknown.",
   "triage_signals": {
-    "route": "JDI",
+    "route": "JGL",
     "submissionType": "Image Studio",
     "requestType": "Bug Report",
     "hasImages": false,
@@ -137,7 +137,7 @@ Structured incident:
 }
 
 Repository investigation brief:
-[{'type': 'reasoning_content', 'reasoning_content': {'text': 'The user wants me to convert a structured incident JSON into a compact engineering brief with exactly four sections:\n1. Incident\n2. What To Inspect\n3. Failure Hypotheses\n4. Evidence To Confirm\n\nI need to extract the relevant information from the JSON and format it appropriately.\n\nLet me organize the information:\n\n**Incident:**\n- Image compression issue in Image Studio\n- User: aditya@email.com\n- System: Image Studio (content creation and image editing platform)\n- Page: Image Studio interface, likely during image processing or export workflow\n- Severity: medium\n- Error type: content_issue\n- Impact: Individual user workflow blocked or degraded\n\n**What To Inspect:**\n- Image Studio compression functionality\n- Export workflow\n- Image processing pipeline\n- Quality settings\n- File size handling\n- Format conversion\n\n**Failure Hypotheses:**\nBased on the data gaps and preliminary assessment:\n1. Quality degradation during compression\n2. Unexpected file size after compression\n3. Format conversion failure\n4. Complete processing failure\n5. Export workflow issue\n\n**Evidence To Confirm:**\n- Specific nature of compression issue\n- Exact workflow step\n- Expected vs actual results\n- Image format and size\n- Error messages\n- Browser and OS\n- Frequency\n- Specific feature used\n\nLet me format this as a clean Markdown brief.\n', 'signature': ''}}, {'type': 'text', 'text': "\n\n# Engineering Brief: Image Compression Issue in Image Studio\n\n## Incident\n\n| Field | Value |\n|-------|-------|\n| **Summary** | Image compression issue in Image Studio |\n| **User** | aditya@email.com |\n| **System** | Image Studio (content creation and image editing platform) |\n| **Context** | Image Studio interface during image processing or export workflow |\n| **Severity** | Medium |\n| **Error Type** | Content Issue |\n| **Impact** | Individual user workflow blocked or degraded due to unspecified compression issue |\n\n---\n\n## What To Inspect\n\n- **Compression module** in Image Studio's image processing pipeline\n- **Export workflow** — specifically the save/export functionality\n- **Quality settings** applied during compression operations\n- **Format conversion logic** (if applicable)\n- **File size handling** during the compression process\n- **Error handling** paths in the compression/export code paths\n\n---\n\n## Failure Hypotheses\n\n1. **Quality Degradation** — Compression algorithm producing unacceptable quality loss\n2. **File Size Issue** — Output file size unexpected (too large or too small)\n3. **Format Conversion Failure** — Unable to convert between formats (JPEG, PNG, WebP, etc.)\n4. **Processing Failure** — Compression process crashes or hangs mid-operation\n5. **Export Pipeline Bug** — Issue in the export workflow preventing compression completion\n\n---\n\n## Evidence To Confirm\n\n- [ ] Specific compression issue type (quality, size, format, or failure)\n- [ ] Exact workflow step where issue occurs (export, save, batch process)\n- [ ] Expected vs. actual compression results\n- [ ] Image format and file size being processed\n- [ ] Error messages or visual artifacts observed\n- [ ] Browser and OS environment details\n- [ ] Frequency of occurrence (one-time or reproducible)\n- [ ] Specific Image Studio feature in use (export, save, batch processing)"}]
+[{'type': 'reasoning_content', 'reasoning_content': {'text': 'The user wants me to convert a structured incident JSON into a compact engineering brief with exactly four sections:\n1. Incident\n2. What To Inspect\n3. Failure Hypotheses\n4. Evidence To Confirm\n\nI need to extract the relevant information from the JSON and format it into these sections. Let me organize the information:\n\n**Incident**: This should cover the short summary, structured problem, system context, page context, error type, severity, and impact.\n\n**What To Inspect**: This should cover what areas/systems/logs to look at based on the system context, page context, and preliminary assessment.\n\n**Failure Hypotheses**: Based on the preliminary assessment and data gaps, what are the possible causes of the failure.\n\n**Evidence To Confirm**: Based on the data gaps, what specific evidence needs to be gathered to confirm or rule out hypotheses.\n\nLet me format this properly in Markdown.\n', 'signature': ''}}, {'type': 'text', 'text': '\n\n# Engineering Brief: PNG Compression Failure in Image Studio\n\n## Incident\n\n**Summary:** PNG compression failing in Image Studio  \n**System:** Image Studio - media processing and optimization platform for image compression and format conversion  \n**Page:** Image Studio submission/compression interface where users upload and compress image files  \n**Error Type:** Workflow blocked  \n**Severity:** Medium  \n**Impact:** User unable to compress PNG files, blocking image optimization workflows and file size management for web or storage purposes\n\n---\n\n## What To Inspect\n\n- **Image Studio compression workflow** - submission pipeline and processing logic\n- **File validation logic** - PNG-specific validation checks (format detection, header parsing)\n- **Compression engine/service** - PNG encoder implementation and error handling\n- **UI state management** - submission form state and error display logic\n- **Server-side processing logs** - request handling and compression job execution\n- **Configuration settings** - PNG compression enablement and parameter settings\n\n---\n\n## Failure Hypotheses\n\n1. **File validation failure** - PNG file not passing validation checks (corrupt header, unsupported color space, or metadata issue)\n2. **Processing error** - PNG compression engine encountering an unhandled exception or resource limit\n3. **Configuration issue** - PNG compression feature disabled or misconfigured in the system\n4. **UI state issue** - Frontend not properly initiating or tracking the compression workflow\n5. **Format-specific bug** - PNG handling code path differs from other formats (JPEG, WebP) and contains a defect\n\n---\n\n## Evidence To Confirm\n\n- [ ] Specific error message displayed to user (check browser console and UI)\n- [ ] Whether issue affects all PNG files or specific ones (test with different PNG samples)\n- [ ] File size and dimensions of affected PNGs\n- [ ] Browser and OS environment of the user\n- [ ] Whether compression starts but fails, or never initiates (network/console logs)\n- [ ] Expected vs actual file size output (if any output is produced)\n- [ ] Whether JPEG, WebP, or other formats compress successfully (compare behavior)\n- [ ] Timestamp of last successful PNG compression (check logs for historical success)\n- [ ] Server-side error logs for the specific request timestamp'}]
 
 Use the MongoDB ticket context for extra evidence:
 - inputArtifact and artifactUrls.input describe the submitted payload artifact

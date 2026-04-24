@@ -42,7 +42,9 @@ export async function POST(req: Request) {
     // ── Process with sharp ──────────────────────────────────────────────────
     let outputBuffer: Buffer;
     if (format === 'png') {
-      outputBuffer = await sharp(inputBuffer).png({ quality }).toBuffer();
+      // Map quality (1-100) to compressionLevel (0-9) for PNG lossless compression
+      const compressionLevel = Math.max(0, Math.min(9, Math.round((100 - quality) / 11)));
+      outputBuffer = await sharp(inputBuffer).png({ compressionLevel }).toBuffer();
     } else if (format === 'webp') {
       outputBuffer = await sharp(inputBuffer).webp({ quality }).toBuffer();
     } else {
@@ -99,8 +101,9 @@ export async function POST(req: Request) {
     });
   } catch (error) {
     const errMsg = error instanceof Error ? error.message : String(error);
-    console.error('Compression error:', errMsg);
+    const errStack = error instanceof Error ? error.stack : '';
+    console.error('Compression error:', errMsg, errStack);
     try { await uploadLog(requestId, `ERROR: ${errMsg}`); } catch {}
-    return NextResponse.json({ error: 'Failed to compress image', requestId }, { status: 500 });
+    return NextResponse.json({ error: `Compression failed: ${errMsg}`, requestId }, { status: 500 });
   }
 }
