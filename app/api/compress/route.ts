@@ -25,6 +25,24 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'No file provided' }, { status: 400 });
     }
 
+    // Validate file size (non-empty and under 50MB)
+    const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
+    if (file.size === 0) {
+      return NextResponse.json({ error: 'File is empty' }, { status: 400 });
+    }
+    if (file.size > MAX_FILE_SIZE) {
+      return NextResponse.json({ error: 'File exceeds maximum size of 50MB' }, { status: 400 });
+    }
+
+    // Validate file type
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif'];
+    if (!allowedTypes.includes(file.type)) {
+      return NextResponse.json(
+        { error: `Unsupported file type: ${file.type}. Allowed: JPEG, PNG, WEBP, GIF` },
+        { status: 400 }
+      );
+    }
+
     log(`Received file: ${file.name} (${(file.size / 1024).toFixed(1)} KB), format=${format}, quality=${quality}`);
 
     const arrayBuffer = await file.arrayBuffer();
@@ -62,6 +80,13 @@ export async function POST(req: Request) {
       log(`Output uploaded to R2: ${outputUpload.key}`);
     } catch (err) {
       log(`R2 output upload failed (non-fatal): ${err}`);
+      // Log to console for monitoring but don't fail the request
+      // The user still gets the file directly in the response
+    }
+
+    // Warn if R2 storage is not functional
+    if (!outputUpload) {
+      log('WARNING: Output was not persisted to R2. User received direct response only.');
     }
 
     // ── Upload LOG to R2 ────────────────────────────────────────────────────
@@ -103,7 +128,23 @@ export async function POST(req: Request) {
     const errMsg = error instanceof Error ? error.message : String(error);
     const errStack = error instanceof Error ? error.stack : '';
     console.error('Compression error:', errMsg, errStack);
+
+    // Categorize error for better user feedback
+    let userMessage = 'Compression failed due to an unexpected error.';
+    if (errMsg.includes('Input buffer contains unsupported image format')) {
+      userMessage = 'The file appears to be corrupted or is not a valid image.';
+    } else if (errMsg.includes('VipsError') || errMsg.includes('sharp')) {
+      userMessage = 'Image processing failed. The file may be corrupted or in an unsupported format.';
+    } else if (errMsg.includes('timeout') || errMsg.includes('ETIMEDOUT')) {
+      userMessage = 'Image processing timed out. Try a smaller image or lower quality setting.';
+    } else if (errMsg.includes('memory') || errMsg.includes('Memory')) {
+      userMessage = 'Image is too large to process. Try a smaller file or dimensions.';
+    }
+
     try { await uploadLog(requestId, `ERROR: ${errMsg}`); } catch {}
-    return NextResponse.json({ error: `Compression failed: ${errMsg}`, requestId }, { status: 500 });
+    return NextResponse.json(
+      { error: userMessage, detail: errMsg, requestId },
+      { status: 500 }
+    );
   }
 }

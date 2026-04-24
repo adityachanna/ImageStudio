@@ -70,6 +70,42 @@ function getBucketName(): string {
   return name;
 }
 
+/** Validate R2 configuration at startup */
+export function validateR2Config(): { valid: boolean; missing: string[] } {
+  const missing: string[] = [];
+
+  const endpoint = (
+    process.env.S3_API ??
+    process.env.R2_ENDPOINT ??
+    ''
+  ).trim();
+  if (!endpoint) missing.push('S3_API (or R2_ENDPOINT)');
+
+  const accessKeyId = (
+    process.env.S3_ACCESS_KEY_ID ??
+    process.env.AWS_ACCESS_KEY_ID ??
+    ''
+  ).trim();
+  if (!accessKeyId) missing.push('S3_ACCESS_KEY_ID (or AWS_ACCESS_KEY_ID)');
+
+  const secretAccessKey = (
+    process.env.Secret_Access_Key ??
+    process.env.AWS_SECRET_ACCESS_KEY ??
+    ''
+  ).trim();
+  if (!secretAccessKey) missing.push('Secret_Access_Key (or AWS_SECRET_ACCESS_KEY)');
+
+  const bucketName = (
+    process.env.Bucket ??
+    process.env.R2_BUCKET_NAME ??
+    process.env.AWS_BUCKET_NAME ??
+    ''
+  ).trim();
+  if (!bucketName) missing.push('Bucket (or R2_BUCKET_NAME)');
+
+  return { valid: missing.length === 0, missing };
+}
+
 function getEndpointUrl(): string {
   return (process.env.S3_API ?? process.env.R2_ENDPOINT ?? '').trim().replace(/\/$/, '');
 }
